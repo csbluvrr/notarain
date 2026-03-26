@@ -1,0 +1,44 @@
+const express = require("express");
+const multer = require("multer");
+
+const { authRequired } = require("../middleware/auth");
+const { requireRole } = require("../middleware/roles");
+const testamentController = require("../controllers/testament.controller");
+
+const router = express.Router();
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.post(
+  "/upload",
+  authRequired,
+  requireRole("testator"),
+  upload.single("file"),
+  testamentController.uploadTestament
+);
+
+router.post(
+  "/submit/:id",
+  authRequired,
+  requireRole("testator"),
+  testamentController.submitTestament
+);
+
+router.post(
+  "/blockchain/:id",
+  authRequired,
+  requireRole("testator"),
+  testamentController.setBlockchainId
+);
+
+router.get(
+  "/my",
+  authRequired,
+  requireRole("testator"),
+  testamentController.getMyTestaments
+);
+
+router.get("/:id", authRequired, testamentController.getTestamentById);
+
+module.exports = router;
+

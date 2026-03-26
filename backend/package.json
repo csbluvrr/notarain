@@ -1,0 +1,26 @@
+{
+  "name": "notarain-backend",
+  "version": "1.0.0",
+  "main": "src/app.js",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "@pinata/sdk": "*",
+    "cors": "*",
+    "dotenv": "*",
+    "ethers": "^6.0.0",
+    "express": "*",
+    "express-validator": "*",
+    "jsonwebtoken": "*",
+    "mongoose": "*",
+    "multer": "*"
+  },
+  "devDependencies": {
+    "nodemon": "*"
+  }
+}
+
