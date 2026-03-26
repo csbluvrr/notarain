@@ -15,8 +15,18 @@ function truncateMiddle(text, left = 6, right = 4) {
 function roleBadge(role) {
   const normalized = String(role || "").toLowerCase();
   if (normalized === "notary") return "bg-purple-700 text-white";
+  if (normalized === "heir") return "bg-emerald-700 text-white";
   if (normalized === "admin") return "bg-indigo-700 text-white";
   return "bg-gray-700 text-white";
+}
+
+function roleLabelFr(role) {
+  const normalized = String(role || "").toLowerCase();
+  if (normalized === "testator") return "Testateur";
+  if (normalized === "notary") return "Notaire";
+  if (normalized === "heir") return "Bénéficiaire";
+  if (normalized === "admin") return "Admin";
+  return role || "Inconnu";
 }
 
 export default function Navbar() {
@@ -26,10 +36,10 @@ export default function Navbar() {
   const onLogout = async () => {
     try {
       await logout();
-      toast.success("Logged out");
+      toast.success("Déconnecté");
       navigate("/");
     } catch {
-      toast.error("Logout failed");
+      toast.error("Déconnexion impossible");
     }
   };
 
@@ -49,14 +59,14 @@ export default function Navbar() {
               {truncateMiddle(user.walletAddress)}
             </div>
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${roleBadge(user.role)}`}>
-              {user.role}
+              {roleLabelFr(user.role)}
             </span>
             <button
               type="button"
               onClick={onLogout}
               className="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 transition font-semibold"
             >
-              Logout
+              Déconnexion
             </button>
           </div>
         ) : (

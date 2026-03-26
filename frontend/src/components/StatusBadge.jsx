@@ -1,10 +1,12 @@
 import React from "react";
 
-function capitalize(text) {
-  if (!text) return "";
-  const s = String(text);
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
+const LABELS_FR = {
+  draft: "Brouillon",
+  pending: "En attente",
+  approved: "Validé",
+  rejected: "Rejeté",
+  executed: "Exécuté"
+};
 
 export default function StatusBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
@@ -18,10 +20,11 @@ export default function StatusBadge({ status }) {
   };
 
   const badgeClass = classNameMap[normalized] || "bg-gray-600 text-white";
+  const label = LABELS_FR[normalized] || normalized || "Inconnu";
 
   return (
     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${badgeClass}`}>
-      {capitalize(normalized)}
+      {label}
     </span>
   );
 }
