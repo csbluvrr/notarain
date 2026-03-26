@@ -28,14 +28,14 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       if (!window.ethereum) {
-        throw new Error("MetaMask not found. Please install it.");
+        throw new Error("MetaMask introuvable. Installez-le pour continuer.");
       }
 
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts"
       });
       if (!accounts || !accounts.length) {
-        throw new Error("No wallet accounts found");
+        throw new Error("Aucun compte détecté dans votre portefeuille");
       }
 
       const walletAddress = accounts[0].toLowerCase();
@@ -52,14 +52,14 @@ export function AuthProvider({ children }) {
             params: [{ chainId: chainIdParam }]
           });
         } catch (err) {
-          throw new Error("Please switch your wallet to Sepolia");
+          throw new Error("Veuillez basculer votre portefeuille sur le réseau Sepolia");
         }
       }
 
       const nonceRes = await api.post("/api/auth/nonce", { walletAddress });
       const message = nonceRes?.data?.message;
       if (!message) {
-        throw new Error("Failed to fetch login nonce");
+        throw new Error("Impossible de récupérer le message de connexion");
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
       const newToken = verifyRes?.data?.token;
       const newUser = verifyRes?.data?.user;
       if (!newToken || !newUser) {
-        throw new Error("Login failed");
+        throw new Error("Connexion impossible");
       }
 
       localStorage.setItem("notarain_token", newToken);
@@ -78,6 +78,17 @@ export function AuthProvider({ children }) {
 
       setToken(newToken);
       setUser(newUser);
+
+      const role = String(newUser.role || "").toLowerCase();
+      if (role === "testator" || role === "admin") {
+        window.location.href = "/testateur";
+      } else if (role === "notary") {
+        window.location.href = "/notaire";
+      } else if (role === "heir") {
+        window.location.href = "/beneficiaire";
+      } else {
+        window.location.href = "/";
+      }
     } finally {
       setLoading(false);
     }
@@ -98,7 +109,8 @@ export function AuthProvider({ children }) {
       connectWallet,
       logout,
       isNotary: user?.role === "notary",
-      isTestator: user?.role === "testator" || user?.role === "admin"
+      isTestator: user?.role === "testator" || user?.role === "admin",
+      isHeir: user?.role === "heir"
     };
   }, [user, token, loading]);
 
