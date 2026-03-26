@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 
+const STORAGE_KEY = "notarain_heir_testament_ids";
+
 function formatDate(value) {
   if (!value) return "";
   const d = new Date(value);
@@ -17,6 +19,51 @@ export default function DashboardBeneficiaire() {
   const [idRecherche, setIdRecherche] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const sauvegarderIds = (ids) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  };
+
+  const ajouterIdLocal = (id) => {
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!existing.includes(id)) {
+      const next = [id, ...existing];
+      sauvegarderIds(next);
+    }
+  };
+
+  const retirerIdLocal = (id) => {
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const next = existing.filter((x) => x !== id);
+    sauvegarderIds(next);
+  };
+
+  React.useEffect(() => {
+    let mounted = true;
+    async function chargerDepuisStockage() {
+      try {
+        setLoading(true);
+        const ids = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        if (!ids.length) return;
+
+        const results = await Promise.allSettled(ids.map((id) => api.get(`/api/testament/${id}`)));
+        const accessibles = results
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value?.data?.testament)
+          .filter((t) => t && t.status === "executed");
+
+        if (mounted) setTestaments(accessibles);
+      } catch {
+        if (mounted) setTestaments([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    chargerDepuisStockage();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const ajouterParId = async () => {
     const id = idRecherche.trim();
@@ -43,6 +90,7 @@ export default function DashboardBeneficiaire() {
         if (exists) return prev;
         return [t, ...prev];
       });
+      ajouterIdLocal(t._id);
       setIdRecherche("");
       toast.success("Testament ajouté à votre liste");
     } catch (err) {
@@ -50,6 +98,12 @@ export default function DashboardBeneficiaire() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const retirer = (id) => {
+    setTestaments((prev) => prev.filter((t) => t._id !== id));
+    retirerIdLocal(id);
+    toast.success("Retiré de la liste");
   };
 
   return (
@@ -110,6 +164,13 @@ export default function DashboardBeneficiaire() {
                   className="mt-4 px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition font-semibold"
                 >
                   Accéder au document
+                </button>
+                <button
+                  type="button"
+                  onClick={() => retirer(t._id)}
+                  className="mt-2 ml-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition font-semibold"
+                >
+                  Retirer
                 </button>
               </div>
             ))}
