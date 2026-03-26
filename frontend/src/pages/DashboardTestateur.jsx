@@ -67,14 +67,14 @@ export default function DashboardTestateur() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="nr-card nr-card-hover nr-fade-in-up p-5 mb-6 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Espace Testateur</h2>
           <p className="text-gray-300 mt-1">Créez et gérez vos testaments.</p>
         </div>
         <Link
           to="/upload"
-          className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold"
+          className="nr-btn-primary"
         >
           ➕ Créer un testament
         </Link>
@@ -85,19 +85,19 @@ export default function DashboardTestateur() {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-white" />
         </div>
       ) : testaments.length === 0 ? (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 text-gray-300">
+        <div className="nr-card nr-card-hover p-6 text-gray-300">
           Aucun testament pour le moment. Cliquez sur “Créer un testament”.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {testaments.map((t) => (
-            <div key={t._id} className="space-y-3">
+            <div key={t._id} className="space-y-3 nr-fade-in-up">
               <TestamentCard testament={t} />
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => navigate(`/testament/${t._id}`)}
-                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition font-semibold"
+                  className="nr-btn-secondary"
                 >
                   👁 Voir détails
                 </button>
@@ -106,7 +106,7 @@ export default function DashboardTestateur() {
                   <button
                     type="button"
                     onClick={() => soumettreAuNotaire(t)}
-                    className="px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 transition font-semibold"
+                    className="px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 transition font-semibold shadow-lg shadow-yellow-950/40"
                   >
                     📤 Soumettre au notaire
                   </button>
@@ -116,7 +116,7 @@ export default function DashboardTestateur() {
                   <button
                     type="button"
                     onClick={() => enregistrerBlockchain(t)}
-                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold"
+                    className="nr-btn-primary"
                   >
                     🔗 Enregistrer sur blockchain
                   </button>

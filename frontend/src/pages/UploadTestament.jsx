@@ -114,7 +114,7 @@ export default function UploadTestament() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6">
+      <div className="nr-card p-5 mb-6">
         <div className="text-sm text-gray-300">
           Étape {etape} / 4 — {indicateur}
         </div>
@@ -124,7 +124,7 @@ export default function UploadTestament() {
       </div>
 
       {etape === 1 ? (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <div className="nr-card p-6">
           <h2 className="text-xl font-bold mb-4">Étape 1 — Choix du fichier</h2>
           <input
             type="file"
@@ -141,7 +141,7 @@ export default function UploadTestament() {
             <button
               type="button"
               onClick={suivantEtape1}
-              className="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
+              className="nr-btn-primary"
               disabled={!file}
             >
               Suivant
@@ -151,7 +151,7 @@ export default function UploadTestament() {
       ) : null}
 
       {etape === 2 ? (
-        <form onSubmit={allerEtape3Upload} className="rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <form onSubmit={allerEtape3Upload} className="nr-card p-6">
           <h2 className="text-xl font-bold mb-4">Étape 2 — Chiffrement</h2>
           <div className="text-sm text-gray-300 mb-4">
             Fichier : <span className="font-semibold text-gray-100">{nomFichier}</span>
@@ -180,14 +180,14 @@ export default function UploadTestament() {
             <button
               type="button"
               onClick={() => setEtape(1)}
-              className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition font-semibold"
+              className="nr-btn-secondary"
             >
               Retour
             </button>
             <button
               type="submit"
               disabled={loadingUpload}
-              className="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
+              className="nr-btn-primary"
             >
               {loadingUpload ? "Upload..." : "Chiffrer et envoyer"}
             </button>
@@ -196,14 +196,14 @@ export default function UploadTestament() {
       ) : null}
 
       {etape === 3 ? (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <div className="nr-card p-6">
           <h2 className="text-xl font-bold mb-4">Étape 3 — Upload</h2>
           <div className="text-gray-300">Upload en cours...</div>
         </div>
       ) : null}
 
       {etape === 4 ? (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 space-y-4">
+        <div className="nr-card p-6 space-y-4">
           <h2 className="text-xl font-bold">Étape 4 — Blockchain</h2>
 
           <div className="text-sm text-gray-300">
@@ -219,7 +219,7 @@ export default function UploadTestament() {
               type="button"
               onClick={soumettreAuNotaire}
               disabled={loadingSoumission}
-              className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 transition font-semibold disabled:opacity-50"
+              className="px-5 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 transition font-semibold disabled:opacity-50 shadow-lg shadow-yellow-950/40"
             >
               {loadingSoumission ? "Soumission..." : "📤 Soumettre au notaire"}
             </button>
@@ -227,13 +227,13 @@ export default function UploadTestament() {
               type="button"
               onClick={enregistrerSurBlockchain}
               disabled={loadingChain}
-              className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
+              className="nr-btn-primary"
             >
               {loadingChain ? "Blockchain..." : "🔗 Enregistrer sur la blockchain"}
             </button>
             <Link
               to="/testateur"
-              className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition font-semibold text-center"
+              className="nr-btn-secondary text-center"
             >
               Retour au dashboard
             </Link>
