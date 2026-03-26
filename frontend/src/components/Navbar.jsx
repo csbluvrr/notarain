@@ -44,10 +44,10 @@ export default function Navbar() {
   };
 
   return (
-    <div className="w-full border-b border-gray-800 bg-gray-900/80 backdrop-blur">
+    <div className="sticky top-0 z-40 w-full border-b border-gray-800 bg-gray-900/80 backdrop-blur">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-md bg-indigo-600 flex items-center justify-center font-bold">
+          <div className="h-9 w-9 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center font-bold shadow-lg shadow-indigo-950/60">
             N
           </div>
           <div className="font-bold text-lg">Notarain</div>
@@ -64,7 +64,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={onLogout}
-              className="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 transition font-semibold"
+              className="nr-btn-secondary"
             >
               Déconnexion
             </button>

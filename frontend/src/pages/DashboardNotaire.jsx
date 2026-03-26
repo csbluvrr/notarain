@@ -113,7 +113,7 @@ export default function DashboardNotaire() {
   const carte = (t, actions) => {
     const ipfsLink = t.ipfsCid ? `${PINATA_GATEWAY}/${t.ipfsCid}` : null;
     return (
-      <div key={t._id} className="rounded-xl border border-gray-800 bg-gray-900/60 p-5">
+      <div key={t._id} className="nr-card nr-card-hover p-5 nr-fade-in-up">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="font-semibold truncate">{t.originalFileName}</div>
@@ -138,7 +138,7 @@ export default function DashboardNotaire() {
           <button
             type="button"
             onClick={() => navigate(`/testament/${t._id}`)}
-            className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition font-semibold"
+            className="nr-btn-secondary"
           >
             👁 Détails
           </button>
@@ -152,17 +152,17 @@ export default function DashboardNotaire() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-6">
+      <div className="nr-card nr-card-hover nr-fade-in-up p-5 mb-6">
         <h2 className="text-2xl font-bold">Espace Notaire</h2>
         <p className="text-gray-300 mt-1">Valider ou rejeter les testaments, puis confirmer le décès si nécessaire.</p>
       </div>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-6 nr-fade-in-up">
         <button
           type="button"
           onClick={() => setOnglet("attente")}
           className={`px-4 py-2 rounded-lg font-semibold transition ${
-            onglet === "attente" ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-200 hover:bg-gray-700"
+            onglet === "attente" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-950/50" : "bg-gray-800 text-gray-200 hover:bg-gray-700"
           }`}
         >
           Testaments en attente
@@ -171,7 +171,7 @@ export default function DashboardNotaire() {
           type="button"
           onClick={() => setOnglet("tous")}
           className={`px-4 py-2 rounded-lg font-semibold transition ${
-            onglet === "tous" ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-200 hover:bg-gray-700"
+            onglet === "tous" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-950/50" : "bg-gray-800 text-gray-200 hover:bg-gray-700"
           }`}
         >
           Tous
@@ -183,7 +183,7 @@ export default function DashboardNotaire() {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-white" />
         </div>
       ) : liste.length === 0 ? (
-        <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 text-gray-300">
+        <div className="nr-card p-6 text-gray-300">
           Aucun élément à afficher.
         </div>
       ) : (

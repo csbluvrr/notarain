@@ -108,14 +108,14 @@ export default function DashboardBeneficiaire() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-6">
+      <div className="nr-card nr-card-hover nr-fade-in-up p-5 mb-6">
         <h2 className="text-2xl font-bold">Espace Bénéficiaire</h2>
         <p className="text-gray-300 mt-1">
           Consultez les testaments accessibles (uniquement après validation et exécution).
         </p>
       </div>
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-5">
+      <div className="nr-card nr-card-hover p-5">
         <div className="font-semibold mb-2">Ajouter un testament accessible</div>
         <div className="text-sm text-gray-300 mb-4">
           Entrez l’identifiant MongoDB du testament (fourni pendant la démonstration) pour l’ajouter à votre liste.
@@ -131,7 +131,7 @@ export default function DashboardBeneficiaire() {
             type="button"
             onClick={ajouterParId}
             disabled={loading}
-            className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
+            className="nr-btn-primary"
           >
             {loading ? "Recherche..." : "Ajouter"}
           </button>
@@ -140,13 +140,13 @@ export default function DashboardBeneficiaire() {
 
       <div className="mt-6">
         {testaments.length === 0 ? (
-          <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-6 text-gray-300">
+          <div className="nr-card p-6 text-gray-300">
             Aucun testament accessible dans votre liste.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {testaments.map((t) => (
-              <div key={t._id} className="rounded-xl border border-gray-800 bg-gray-900/60 p-5">
+              <div key={t._id} className="nr-card nr-card-hover p-5 nr-fade-in-up">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="font-semibold truncate">{t.originalFileName}</div>
@@ -161,7 +161,7 @@ export default function DashboardBeneficiaire() {
                 <button
                   type="button"
                   onClick={() => navigate(`/testament/${t._id}`)}
-                  className="mt-4 px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition font-semibold"
+                  className="mt-4 px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition font-semibold shadow-lg shadow-emerald-950/40"
                 >
                   Accéder au document
                 </button>
