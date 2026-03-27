@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 
 import api from "../services/api";
 import StatusBadge from "../components/StatusBadge";
+import { useDemoMode } from "../demo/DemoContext";
 
 const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
@@ -66,15 +67,21 @@ export default function DetailsTestament() {
   const [mdp, setMdp] = useState("");
   const [decrypting, setDecrypting] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
+  const { isDemoMode, testaments: demoTestaments, demoDecryptDocument } = useDemoMode();
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
         setLoading(true);
-        const res = await api.get(`/api/testament/${id}`);
-        const t = res?.data?.testament;
-        if (mounted) setTestament(t || null);
+        if (isDemoMode) {
+          const t = (demoTestaments || []).find((x) => String(x._id) === String(id));
+          if (mounted) setTestament(t || null);
+        } else {
+          const res = await api.get(`/api/testament/${id}`);
+          const t = res?.data?.testament;
+          if (mounted) setTestament(t || null);
+        }
       } catch (err) {
         toast.error(err?.response?.data?.error || err?.message || "Chargement impossible");
       } finally {
@@ -85,7 +92,7 @@ export default function DetailsTestament() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, isDemoMode, demoTestaments]);
 
   useEffect(() => {
     return () => {
@@ -111,23 +118,35 @@ export default function DetailsTestament() {
     try {
       setDecrypting(true);
       toast.loading("Téléchargement du fichier chiffré...", { id: "dl" });
-      const res = await fetch(ipfsLink);
-      if (!res.ok) {
-        throw new Error(`Téléchargement impossible (${res.status})`);
+      if (isDemoMode) {
+        const blob = await demoDecryptDocument(testament, mdp);
+        toast.success("Fichier téléchargé", { id: "dl" });
+        toast.loading("Déchiffrement en cours...", { id: "dec" });
+        toast.success("Déchiffrement réussi", { id: "dec" });
+        const url = URL.createObjectURL(blob);
+        setPdfUrl((old) => {
+          if (old) URL.revokeObjectURL(old);
+          return url;
+        });
+      } else {
+        const res = await fetch(ipfsLink);
+        if (!res.ok) {
+          throw new Error(`Téléchargement impossible (${res.status})`);
+        }
+        const encryptedBuffer = await res.arrayBuffer();
+        toast.success("Fichier téléchargé", { id: "dl" });
+
+        toast.loading("Déchiffrement en cours...", { id: "dec" });
+        const plainBuffer = await decryptEncryptedBuffer(encryptedBuffer, mdp);
+        toast.success("Déchiffrement réussi", { id: "dec" });
+
+        const blob = new Blob([plainBuffer], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        setPdfUrl((old) => {
+          if (old) URL.revokeObjectURL(old);
+          return url;
+        });
       }
-      const encryptedBuffer = await res.arrayBuffer();
-      toast.success("Fichier téléchargé", { id: "dl" });
-
-      toast.loading("Déchiffrement en cours...", { id: "dec" });
-      const plainBuffer = await decryptEncryptedBuffer(encryptedBuffer, mdp);
-      toast.success("Déchiffrement réussi", { id: "dec" });
-
-      const blob = new Blob([plainBuffer], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      setPdfUrl((old) => {
-        if (old) URL.revokeObjectURL(old);
-        return url;
-      });
     } catch (err) {
       toast.error(err?.message || "Déchiffrement impossible");
     } finally {

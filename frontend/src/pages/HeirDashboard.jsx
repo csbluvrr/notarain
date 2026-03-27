@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import api from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import useAuth from "../hooks/useAuth";
+import { useDemoMode } from "../demo/DemoContext";
 
 const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
@@ -18,7 +19,7 @@ function formatDate(value) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-function TriggerDownload({ open, item, onClose }) {
+function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,46 +42,52 @@ function TriggerDownload({ open, item, onClose }) {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`${PINATA_GATEWAY}/${item.ipfsCid}`);
-      if (!res.ok) throw new Error("Unable to fetch encrypted file");
-      const encryptedArrayBuffer = await res.arrayBuffer();
-      const bytes = new Uint8Array(encryptedArrayBuffer);
+      if (isDemoMode) {
+        await demoDecryptDocument(item, password);
+        toast.success("Document downloaded");
+        onClose?.();
+      } else {
+        const res = await fetch(`${PINATA_GATEWAY}/${item.ipfsCid}`);
+        if (!res.ok) throw new Error("Unable to fetch encrypted file");
+        const encryptedArrayBuffer = await res.arrayBuffer();
+        const bytes = new Uint8Array(encryptedArrayBuffer);
 
-      if (bytes.length < 32) throw new Error("Invalid encrypted payload");
-      const iv = bytes.slice(0, 16);
-      const authTag = bytes.slice(16, 32);
-      const cipher = bytes.slice(32);
-      const merged = new Uint8Array(cipher.length + authTag.length);
-      merged.set(cipher, 0);
-      merged.set(authTag, cipher.length);
+        if (bytes.length < 32) throw new Error("Invalid encrypted payload");
+        const iv = bytes.slice(0, 16);
+        const authTag = bytes.slice(16, 32);
+        const cipher = bytes.slice(32);
+        const merged = new Uint8Array(cipher.length + authTag.length);
+        merged.set(cipher, 0);
+        merged.set(authTag, cipher.length);
 
-      const passBytes = ethers.toUtf8Bytes(password, "NFKC");
-      const saltBytes = ethers.toUtf8Bytes("notarain-salt");
-      const keyHex = ethers.scryptSync(passBytes, saltBytes, 16384, 8, 1, 32);
-      const key = await crypto.subtle.importKey(
-        "raw",
-        ethers.getBytes(keyHex),
-        { name: "AES-GCM" },
-        false,
-        ["decrypt"]
-      );
+        const passBytes = ethers.toUtf8Bytes(password, "NFKC");
+        const saltBytes = ethers.toUtf8Bytes("notarain-salt");
+        const keyHex = ethers.scryptSync(passBytes, saltBytes, 16384, 8, 1, 32);
+        const key = await crypto.subtle.importKey(
+          "raw",
+          ethers.getBytes(keyHex),
+          { name: "AES-GCM" },
+          false,
+          ["decrypt"]
+        );
 
-      const plain = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv, tagLength: 128 },
-        key,
-        merged
-      );
+        const plain = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv, tagLength: 128 },
+          key,
+          merged
+        );
 
-      const blob = new Blob([plain], { type: "application/pdf" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = item.originalFileName || "testament.pdf";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-      toast.success("Document downloaded");
-      onClose?.();
+        const blob = new Blob([plain], { type: "application/pdf" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = item.originalFileName || "testament.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        toast.success("Document downloaded");
+        onClose?.();
+      }
     } catch (err) {
       setError("Incorrect password. Please verify with the testator.");
       toast.error(err?.message || "Decryption failed");
@@ -141,11 +148,153 @@ function TriggerDownload({ open, item, onClose }) {
   );
 }
 
+function IntegrityModal({ open, item, onClose, onVerify }) {
+  const [file, setFile] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onEsc = (e) => e.key === "Escape" && onClose?.();
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    setFile(null);
+    setChecking(false);
+    setResult(null);
+  }, [open]);
+
+  if (!open || !item) return null;
+
+  const pick = async (f) => {
+    setFile(f);
+    setChecking(true);
+    setResult(null);
+    try {
+      const res = await onVerify?.(item, f);
+      setResult(res || null);
+    } catch (err) {
+      toast.error(err?.message || "Verification failed");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 210 }}>
+      <div
+        className="card"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "min(520px, calc(100vw - 32px))",
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)"
+        }}
+      >
+        <h3 style={{ fontSize: 26 }}>Blockchain Integrity Verification</h3>
+        <p style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 14 }}>
+          Upload a document to verify its hash against the on-chain record.
+        </p>
+
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>On-chain hash</div>
+          <code
+            style={{
+              display: "block",
+              background: "var(--surface-3)",
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              padding: "10px 12px",
+              color: "var(--accent)",
+              fontFamily: "monospace",
+              fontSize: 12,
+              wordBreak: "break-all"
+            }}
+          >
+            {item.documentHash}
+          </code>
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>
+            Upload document to verify
+          </label>
+          <input
+            type="file"
+            className="input"
+            onChange={(e) => {
+              const f = e.target.files?.[0] || null;
+              if (f) pick(f);
+            }}
+          />
+          {file ? <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>{file.name}</div> : null}
+        </div>
+
+        {checking ? (
+          <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 13 }}>
+            <span className="spinner" /> Verifying...
+          </div>
+        ) : null}
+
+        {result?.verified ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 999,
+                  background: "var(--success-dim)",
+                  border: "1px solid var(--success)",
+                  color: "var(--success)",
+                  display: "grid",
+                  placeItems: "center",
+                  fontWeight: 700
+                }}
+              >
+                ✓
+              </div>
+              <div style={{ color: "var(--success)", fontSize: 14 }}>Document integrity verified</div>
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 6, color: "var(--text-secondary)", fontSize: 13 }}>
+              <div>
+                On-chain hash: <span style={{ fontFamily: "monospace", color: "var(--accent)" }}>{result.onChainHash}</span>
+              </div>
+              <div>
+                Computed hash: <span style={{ fontFamily: "monospace", color: "var(--accent)" }}>{result.computedHash}</span>
+              </div>
+              <div style={{ color: "var(--success)" }}>Match: ✓ Identical</div>
+            </div>
+
+            <div style={{ marginTop: 12, color: "var(--text-muted)", fontSize: 12 }}>
+              This confirms the document has not been modified since it was registered on the blockchain.
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
+          <button className="btn-secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HeirDashboard() {
   const { user } = useAuth();
+  const { isDemoMode, demoUser, heirTestaments, demoDecryptDocument, demoVerifyHash } = useDemoMode();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [modalItem, setModalItem] = useState(null);
+  const [verifyItem, setVerifyItem] = useState(null);
 
   const load = async () => {
     try {
@@ -160,8 +309,13 @@ export default function HeirDashboard() {
   };
 
   useEffect(() => {
+    if (isDemoMode) {
+      setItems(heirTestaments || []);
+      setLoading(false);
+      return;
+    }
     load();
-  }, []);
+  }, [isDemoMode, heirTestaments]);
 
   const executedCount = useMemo(() => items.filter((t) => t.status === "executed").length, [items]);
 
@@ -206,13 +360,20 @@ export default function HeirDashboard() {
 
               <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                  {(t.heirs || []).find((h) => h.walletAddress === String(user?.walletAddress || "").toLowerCase())?.share ||
+                  {(t.heirs || []).find((h) => h.walletAddress === String((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "").toLowerCase())?.share ||
                     "Heir share available in testament record"}
                 </div>
                 {t.status === "executed" ? (
-                  <button className="btn-primary" onClick={() => setModalItem(t)}>
-                    Access Document
-                  </button>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    {isDemoMode ? (
+                      <button className="btn-secondary" style={{ padding: "10px 14px" }} onClick={() => setVerifyItem(t)}>
+                        Verify Integrity
+                      </button>
+                    ) : null}
+                    <button className="btn-primary" onClick={() => setModalItem(t)}>
+                      Access Document
+                    </button>
+                  </div>
                 ) : (
                   <div style={{ color: "var(--text-muted)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
                     <span>🔒</span> Awaiting execution
@@ -224,7 +385,20 @@ export default function HeirDashboard() {
         </div>
       )}
 
-      <TriggerDownload open={Boolean(modalItem)} item={modalItem} onClose={() => setModalItem(null)} />
+      <TriggerDownload
+        open={Boolean(modalItem)}
+        item={modalItem}
+        onClose={() => setModalItem(null)}
+        isDemoMode={isDemoMode}
+        demoDecryptDocument={demoDecryptDocument}
+      />
+
+      <IntegrityModal
+        open={Boolean(verifyItem)}
+        item={verifyItem}
+        onClose={() => setVerifyItem(null)}
+        onVerify={async (testament) => demoVerifyHash(testament)}
+      />
     </section>
   );
 }

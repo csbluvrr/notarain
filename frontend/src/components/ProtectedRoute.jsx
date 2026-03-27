@@ -1,9 +1,29 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import { useDemoMode } from "../demo/DemoContext";
 
 export default function ProtectedRoute({ role, children }) {
   const { user, loading } = useAuth();
+  const { isDemoMode, demoUser } = useDemoMode();
+
+  if (isDemoMode) {
+    const virtualUser = demoUser
+      ? {
+          walletAddress: demoUser.walletAddress,
+          role: demoUser.role
+        }
+      : null;
+
+    if (role && virtualUser?.role) {
+      const allowed = Array.isArray(role) ? role : [role];
+      if (!allowed.includes(virtualUser.role)) {
+        return <Navigate to="/demo" replace />;
+      }
+    }
+
+    return children ? children : <Outlet />;
+  }
 
   if (loading) {
     return (

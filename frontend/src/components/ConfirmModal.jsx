@@ -8,7 +8,8 @@ export default function ConfirmModal({
   cancelText = "Cancel",
   variant = "default",
   onConfirm,
-  onCancel
+  onCancel,
+  children
 }) {
   useEffect(() => {
     if (!open) return undefined;
@@ -57,6 +58,7 @@ export default function ConfirmModal({
         <p style={{ marginTop: 12, marginBottom: 24, color: "var(--text-secondary)", fontSize: 14 }}>
           {description}
         </p>
+        {children ? <div style={{ marginBottom: 18 }}>{children}</div> : null}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button type="button" className="btn-secondary" onClick={onCancel}>
             {cancelText}
