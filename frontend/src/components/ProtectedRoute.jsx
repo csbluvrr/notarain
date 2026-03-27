@@ -7,8 +7,8 @@ export default function ProtectedRoute({ role, children }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-600 border-t-white" />
+      <div className="app-shell flex items-center justify-center min-h-screen">
+        <span className="spinner" style={{ width: 28, height: 28 }} />
       </div>
     );
   }

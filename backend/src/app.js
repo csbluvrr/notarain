@@ -7,6 +7,7 @@ const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/auth.routes");
 const testamentRoutes = require("./routes/testament.routes");
 const notaryRoutes = require("./routes/notary.routes");
+const heirRoutes = require("./routes/heir.routes");
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/testament", testamentRoutes);
 app.use("/api/notary", notaryRoutes);
+app.use("/api/heir", heirRoutes);
 
 // Global error handler
 // eslint-disable-next-line no-unused-vars

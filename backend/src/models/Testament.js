@@ -27,6 +27,16 @@ const TestamentSchema = new mongoose.Schema({
   originalFileName: {
     type: String
   },
+  heirs: {
+    type: [
+      {
+        walletAddress: { type: String, lowercase: true, trim: true },
+        name: { type: String, trim: true },
+        share: { type: String, trim: true }
+      }
+    ],
+    default: []
+  },
   createdAt: {
     type: Date,
     default: Date.now
