@@ -13,7 +13,10 @@ function DemoUploadModal({ open, onClose, onCreated }) {
   const [fileName, setFileName] = useState("");
   const [cid, setCid] = useState("");
   const [hash, setHash] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [password, setPassword] = useState("Demo2026");
   const [pending, setPending] = useState(false);
+  const [stageLabel, setStageLabel] = useState("");
 
   if (!open) return null;
 
@@ -22,41 +25,66 @@ function DemoUploadModal({ open, onClose, onCreated }) {
     setFileName("");
     setCid("");
     setHash("");
+    setTxHash("");
+    setPassword("Demo2026");
+    setStageLabel("");
     setPending(false);
     onClose?.();
   };
 
+  const onPickFile = (name = "testament_demo_presentation.pdf") => {
+    setFileName(name);
+    setInnerStep(2);
+  };
+
   const startFakeUpload = () => {
+    if (!fileName) {
+      toast.error("Please pick a file first");
+      return;
+    }
     setPending(true);
-    setFileName("testament_demo_presentation.pdf");
+    setStageLabel("Encrypting...");
     setTimeout(() => {
-      setInnerStep(2);
+      setStageLabel("Uploading to IPFS...");
       setTimeout(() => {
         setCid("QmDemoX1y2Z3a4B5c6D7e8F9g0H1i2J3k4L5m6N7o8P9q0R");
-        setHash(
-          "0xDemoHash1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0"
-        );
+        setHash("0xDemoHash1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0");
         setInnerStep(3);
         setPending(false);
-      }, 2500);
-    }, 400);
+      }, 1000);
+    }, 1500);
+  };
+
+  const submitForReview = async () => {
+    setPending(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setPending(false);
+    setInnerStep(4);
+  };
+
+  const registerChain = async () => {
+    setPending(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    setTxHash("0xDemo1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f");
+    setPending(false);
   };
 
   const finishFlow = () => {
     onCreated?.({
-      _id: "demo-new",
-      testatorWallet: "",
+      _id: `demo-new-${Date.now()}`,
+      testatorWallet: "0x4959b982b64e23cfbb9bdc59134e5f98c19e8b51",
       originalFileName: fileName || "testament_demo_presentation.pdf",
       status: "pending",
-      ipfsCid: cid,
-      documentHash: hash,
+      ipfsCid: cid || "QmDemoX1y2Z3a4B5c6D7e8F9g0H1i2J3k4L5m6N7o8P9q0R",
+      documentHash:
+        hash || "0xDemoHash1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0",
       blockchainId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       notaryWallet: null,
       heirs: []
     });
-    toast.success("Demo testament created (pending)");
+    toast.success("Demo upload complete. Testament added.");
     closeAll();
   };
 
@@ -79,24 +107,43 @@ function DemoUploadModal({ open, onClose, onCreated }) {
         <h3 style={{ fontSize: 26, marginBottom: 8 }}>Demo Upload Flow</h3>
         {innerStep === 1 ? (
           <>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-              This is a simulated upload. No real encryption or IPFS upload will occur.
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 8 }}>
+              Step 1 — Pick a file (simulated)
             </p>
-            <button type="button" className="btn-primary" onClick={startFakeUpload}>
+            <input
+              className="input"
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => onPickFile(e.target.files?.[0]?.name || "testament_demo_presentation.pdf")}
+              style={{ marginBottom: 10 }}
+            />
+            <button type="button" className="btn-secondary" onClick={() => onPickFile("testament_demo_presentation.pdf")} style={{ marginRight: 8 }}>
               Use sample file
             </button>
+            {fileName ? <span style={{ color: "var(--success)", fontSize: 13 }}>✓ {fileName}</span> : null}
           </>
         ) : innerStep === 2 ? (
           <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-            <div style={{ marginBottom: 10 }}>Encrypting with AES-256...</div>
-            <div style={{ marginBottom: 10 }}>Uploading to IPFS...</div>
-            <span className="spinner" />
+            <p style={{ marginBottom: 10 }}>Step 2 — Encrypt & Upload</p>
+            <input
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{ marginBottom: 10, maxWidth: 240 }}
+            />
+            {pending ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span className="spinner" /> {stageLabel}
+              </div>
+            ) : (
+              <button type="button" className="btn-primary" onClick={startFakeUpload}>
+                Encrypt & Upload
+              </button>
+            )}
           </div>
         ) : innerStep === 3 ? (
           <>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 8 }}>
-              Simulated upload complete.
-            </p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 8 }}>Step 3 — Submit for Review</p>
             <div style={{ marginBottom: 8 }}>
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>File</div>
               <div style={{ fontSize: 14 }}>{fileName}</div>
@@ -109,9 +156,37 @@ function DemoUploadModal({ open, onClose, onCreated }) {
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Hash</div>
               <code style={{ fontSize: 12 }}>{hash}</code>
             </div>
-            <button type="button" className="btn-primary" onClick={finishFlow}>
-              Finish Demo Upload
+            <button type="button" className="btn-primary" onClick={submitForReview} disabled={pending}>
+              {pending ? "Submitting..." : "Submit for Review"}
             </button>
+          </>
+        ) : innerStep === 4 ? (
+          <>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 8 }}>Step 4 — Register on Blockchain</p>
+            <button type="button" className="btn-primary" onClick={registerChain} disabled={pending || Boolean(txHash)}>
+              {pending ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span className="spinner" /> Confirming...
+                </span>
+              ) : txHash ? "Registered" : "Register on Blockchain"}
+            </button>
+            {txHash ? (
+              <div style={{ marginTop: 12 }}>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "var(--accent)", fontSize: 12, wordBreak: "break-all" }}
+                >
+                  {txHash}
+                </a>
+                <div style={{ marginTop: 10 }}>
+                  <button type="button" className="btn-primary" onClick={finishFlow}>
+                    Close and Add Testament
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </>
         ) : null}
 
@@ -192,7 +267,7 @@ export default function DemoTestatorDashboard() {
 
       <div style={{ display: "grid", gap: 12 }}>
         {demoTestaments.map((t) => (
-          <TestamentCard key={t._id} testament={t} />
+          <TestamentCard key={t._id} testament={t} isDemo />
         ))}
       </div>
 
