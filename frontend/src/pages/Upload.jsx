@@ -339,6 +339,11 @@ export default function Upload() {
               "Submit for Review"
             )}
           </button>
+          <div style={{ marginTop: 10 }}>
+            <Link to="/dashboard" className="btn-secondary">
+              View My Testaments Now
+            </Link>
+          </div>
         </div>
       ) : null}
 
