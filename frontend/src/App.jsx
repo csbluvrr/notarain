@@ -13,6 +13,10 @@ import NotaryDashboard from "./pages/NotaryDashboard";
 import HeirDashboard from "./pages/HeirDashboard";
 import DetailsTestament from "./pages/DetailsTestament";
 import Page404 from "./pages/Page404";
+import DemoRoleSelect from "./pages/DemoRoleSelect";
+import DemoTestatorDashboard from "./pages/DemoTestatorDashboard";
+import DemoNotaryDashboard from "./pages/DemoNotaryDashboard";
+import DemoHeirDashboard from "./pages/DemoHeirDashboard";
 
 export default function App() {
   return (
@@ -75,6 +79,10 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/demo" element={<DemoRoleSelect />} />
+            <Route path="/demo/testator" element={<DemoTestatorDashboard />} />
+            <Route path="/demo/notary" element={<DemoNotaryDashboard />} />
+            <Route path="/demo/heir" element={<DemoHeirDashboard />} />
             <Route path="*" element={<Page404 />} />
           </Routes>
         </div>

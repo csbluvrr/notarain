@@ -14,7 +14,7 @@ function truncateMiddle(text, left = 10, right = 4) {
   return `${s.slice(0, left)}...${s.slice(-right)}`;
 }
 
-export default function TestamentCard({ testament, actions = null }) {
+export default function TestamentCard({ testament, actions = null, isDemo = false }) {
   const {
     originalFileName,
     status,
@@ -47,8 +47,21 @@ export default function TestamentCard({ testament, actions = null }) {
           </div>
 
           {hasBlockchainId ? (
-            <div className="mt-2 text-xs" style={{ color: "var(--success)" }}>
-              Chain ID: {blockchainId}
+            <div className="mt-2 text-xs" style={{ color: "var(--success)", display: "flex", gap: 8, alignItems: "center" }}>
+              <span>Chain ID: {blockchainId}</span>
+              {isDemo ? (
+                <span
+                  style={{
+                    background: "var(--surface-3)",
+                    color: "var(--text-muted)",
+                    borderRadius: 4,
+                    padding: "2px 6px",
+                    fontSize: 10
+                  }}
+                >
+                  SIMULATED
+                </span>
+              ) : null}
             </div>
           ) : null}
 
