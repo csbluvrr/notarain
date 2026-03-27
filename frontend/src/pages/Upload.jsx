@@ -6,7 +6,7 @@ import api from "../services/api";
 import { getContract } from "../hooks/useContract";
 import { useDemoMode } from "../demo/DemoContext";
 
-const steps = ["Select File", "Encrypt & Upload", "Submit", "On-Chain"];
+const steps = ["Choisir le fichier", "Chiffrer & envoyer", "Soumettre", "Blockchain"];
 
 function humanFileSize(size = 0) {
   if (size < 1024) return `${size} B`;
@@ -54,8 +54,8 @@ export default function Upload() {
 
   const goToStep2 = () => {
     const nextErrors = {};
-    if (!file) nextErrors.file = "Please select a PDF file.";
-    else if (file.type !== "application/pdf") nextErrors.file = "Only PDF files are allowed.";
+    if (!file) nextErrors.file = "Veuillez sélectionner un fichier PDF.";
+    else if (file.type !== "application/pdf") nextErrors.file = "Seuls les fichiers PDF sont autorisés.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     setStep(2);
@@ -63,10 +63,10 @@ export default function Upload() {
 
   const encryptAndUpload = async () => {
     const nextErrors = {};
-    if (!password) nextErrors.password = "Password is required.";
-    if (!confirmPassword) nextErrors.confirmPassword = "Please confirm password.";
+    if (!password) nextErrors.password = "Mot de passe requis.";
+    if (!confirmPassword) nextErrors.confirmPassword = "Veuillez confirmer le mot de passe.";
     if (password && confirmPassword && password !== confirmPassword) {
-      nextErrors.confirmPassword = "Passwords do not match.";
+      nextErrors.confirmPassword = "Les mots de passe ne correspondent pas.";
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -107,7 +107,7 @@ export default function Upload() {
         setTestamentId(res?.testamentId || "");
         setIpfsCid(res?.ipfsCid || "");
         setDocumentHash(res?.documentHash || "");
-        toast.success("Upload complete");
+        toast.success("Envoi terminé");
         setStep(3);
       } else {
         setEncrypting(true);
@@ -120,11 +120,11 @@ export default function Upload() {
         setTestamentId(res?.data?.testamentId || "");
         setIpfsCid(res?.data?.ipfsCid || "");
         setDocumentHash(res?.data?.documentHash || "");
-        toast.success("Upload complete");
+        toast.success("Envoi terminé");
         setStep(3);
       }
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Upload failed");
+      toast.error(err?.response?.data?.error || err?.message || "Échec de l’envoi");
     } finally {
       setEncrypting(false);
       setUploading(false);
@@ -134,7 +134,7 @@ export default function Upload() {
   };
 
   const submitForReview = async () => {
-    if (!testamentId) return toast.error("Missing testament identifier.");
+    if (!testamentId) return toast.error("Identifiant du testament manquant.");
     try {
       setSubmittingReview(true);
 
@@ -144,10 +144,10 @@ export default function Upload() {
         await api.post(`/api/testament/submit/${testamentId}`);
       }
 
-      toast.success("Submitted for notary review");
+      toast.success("Soumis au notaire");
       setStep(4);
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Submit failed");
+      toast.error(err?.response?.data?.error || err?.message || "Échec de soumission");
     } finally {
       setSubmittingReview(false);
     }
@@ -155,21 +155,21 @@ export default function Upload() {
 
   const registerOnChain = async () => {
     if (!testamentId || !ipfsCid || !documentHash) {
-      toast.error("Missing CID or document hash.");
+      toast.error("CID ou hash du document manquant.");
       return;
     }
     try {
       setChainPending(true);
 
       if (isDemoMode) {
-        setDemoChainStage("Waiting for MetaMask...");
-        const s1 = setTimeout(() => setDemoChainStage("Transaction submitted..."), 500);
-        const s2 = setTimeout(() => setDemoChainStage("Confirming on Sepolia..."), 1500);
+        setDemoChainStage("En attente de MetaMask...");
+        const s1 = setTimeout(() => setDemoChainStage("Transaction envoyée..."), 500);
+        const s2 = setTimeout(() => setDemoChainStage("Confirmation sur Sepolia..."), 1500);
         const { txHash: minedHash, blockchainId } = await demoRegisterOnChain(testamentId, ipfsCid, documentHash);
         clearTimeout(s1);
         clearTimeout(s2);
         setTxHash(minedHash || "");
-        if (blockchainId) toast.success(`Registered on-chain (#${blockchainId})`);
+        if (blockchainId) toast.success(`Enregistré sur la blockchain (#${blockchainId})`);
         setDemoChainStage("");
       } else {
         const contract = await getContract();
@@ -182,9 +182,9 @@ export default function Upload() {
         await api.post(`/api/testament/blockchain/${testamentId}`, { blockchainId: 0, txHash: minedHash });
       }
 
-      toast.success("Transaction confirmed");
+      toast.success("Transaction confirmée");
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Blockchain registration failed");
+      toast.error(err?.response?.data?.error || err?.message || "Échec de l’enregistrement sur la blockchain");
     } finally {
       setChainPending(false);
       setDemoChainStage("");
@@ -193,8 +193,8 @@ export default function Upload() {
 
   return (
     <section className="page-container">
-      <h1 className="page-title">Upload Testament</h1>
-      <p className="page-subtitle">Encrypt, upload and register your testament securely.</p>
+      <h1 className="page-title">Déposer un testament</h1>
+      <p className="page-subtitle">Chiffrez, envoyez et enregistrez votre testament en toute sécurité.</p>
 
       <div className="card card-highlight" style={{ marginBottom: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -244,7 +244,7 @@ export default function Upload() {
 
       {step === 1 ? (
         <div className="card">
-          <h3 style={{ fontSize: 28, marginBottom: 14 }}>Step 1 — Select File</h3>
+          <h3 style={{ fontSize: 28, marginBottom: 14 }}>Étape 1 — Choisir le fichier</h3>
           <label
             htmlFor="pdf-file"
             style={{
@@ -264,8 +264,8 @@ export default function Upload() {
                 <path d="M8 7l4-4 4 4" />
                 <path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" />
               </svg>
-              <div style={{ color: "var(--text-secondary)", marginTop: 8 }}>Drop your PDF here</div>
-              <div style={{ color: "var(--text-muted)", fontSize: 13 }}>or click to browse</div>
+              <div style={{ color: "var(--text-secondary)", marginTop: 8 }}>Déposez votre PDF ici</div>
+              <div style={{ color: "var(--text-muted)", fontSize: 13 }}>ou cliquez pour parcourir</div>
             </div>
           </label>
           <input id="pdf-file" type="file" accept="application/pdf" onChange={onSelectFile} style={{ display: "none" }} />
@@ -277,7 +277,7 @@ export default function Upload() {
           ) : null}
           <div style={{ marginTop: 18 }}>
             <button type="button" className="btn-primary" onClick={goToStep2}>
-              Continue
+              Continuer
             </button>
           </div>
         </div>
@@ -285,7 +285,7 @@ export default function Upload() {
 
       {step === 2 ? (
         <div className="card">
-          <h3 style={{ fontSize: 28, marginBottom: 10 }}>Step 2 — Encrypt & Upload</h3>
+          <h3 style={{ fontSize: 28, marginBottom: 10 }}>Étape 2 — Chiffrer & envoyer</h3>
           <div
             style={{
               background: "var(--accent-dim)",
@@ -300,13 +300,13 @@ export default function Upload() {
           >
             <span style={{ color: "var(--accent)" }}>🔒</span>
             <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-              Your document will be encrypted with AES-256 before upload. Store your password safely - it cannot be recovered.
+              Votre document sera chiffré en AES-256 avant l’envoi. Conservez votre mot de passe — il ne peut pas être récupéré.
             </span>
           </div>
 
           <div style={{ display: "grid", gap: 10, maxWidth: 500 }}>
             <div>
-              <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>Password</label>
+              <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>Mot de passe</label>
               <div style={{ position: "relative" }}>
                 <input
                   className="input"
@@ -316,7 +316,7 @@ export default function Upload() {
                     setPassword(e.target.value);
                     setErrors((prev) => ({ ...prev, password: "" }));
                   }}
-                  placeholder="Enter encryption password"
+                placeholder="Entrez le mot de passe de chiffrement"
                 />
                 <button
                   type="button"
@@ -324,14 +324,14 @@ export default function Upload() {
                   style={{ position: "absolute", right: 6, top: 6, padding: "6px 10px" }}
                   onClick={() => setShowPassword((v) => !v)}
                 >
-                  {showPassword ? "Hide" : "Show"}
+                  {showPassword ? "Masquer" : "Afficher"}
                 </button>
               </div>
               {errors.password ? <div className="inline-error">{errors.password}</div> : null}
             </div>
 
             <div>
-              <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>Confirm Password</label>
+              <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>Confirmer le mot de passe</label>
               <input
                 className="input"
                 type="password"
@@ -340,7 +340,7 @@ export default function Upload() {
                   setConfirmPassword(e.target.value);
                   setErrors((prev) => ({ ...prev, confirmPassword: "" }));
                 }}
-                placeholder="Confirm encryption password"
+                placeholder="Confirmez le mot de passe de chiffrement"
               />
               {errors.confirmPassword ? <div className="inline-error">{errors.confirmPassword}</div> : null}
             </div>
@@ -357,15 +357,15 @@ export default function Upload() {
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                   <span className="spinner" />
                   {isDemoMode
-                    ? demoProgressMessage || "Processing..."
+                    ? demoProgressMessage || "Traitement..."
                     : encrypting
-                      ? "Encrypting..."
+                      ? "Chiffrement..."
                       : uploading
-                        ? "Uploading to IPFS..."
-                        : "Verifying upload..."}
+                        ? "Envoi vers IPFS..."
+                        : "Vérification de l’envoi..."}
                 </span>
               ) : (
-                "Encrypt & Upload"
+                "Chiffrer & envoyer"
               )}
             </button>
           </div>
@@ -387,7 +387,13 @@ export default function Upload() {
                     <span style={{ color: done ? "var(--success)" : active ? "var(--accent)" : "var(--text-muted)" }}>
                       {done ? "✓" : active ? <span className="spinner" style={{ width: 14, height: 14 }} /> : "•"}
                     </span>
-                    <span style={{ color: active ? "var(--accent)" : "var(--text-secondary)" }}>{label}</span>
+                    <span style={{ color: active ? "var(--accent)" : "var(--text-secondary)" }}>
+                      {label === "Encrypting document with AES-256..."
+                        ? "Chiffrement du document (AES-256)..."
+                        : label === "Uploading encrypted file to IPFS..."
+                          ? "Envoi du fichier chiffré vers IPFS..."
+                          : "Vérification de l’intégrité de l’envoi..."}
+                    </span>
                   </div>
                 );
               })}
@@ -418,27 +424,27 @@ export default function Upload() {
 
       {step === 3 ? (
         <div className="card">
-          <h3 style={{ fontSize: 28, marginBottom: 10 }}>Step 3 — Submit for Review</h3>
+          <h3 style={{ fontSize: 28, marginBottom: 10 }}>Étape 3 — Soumettre au notaire</h3>
           <div className="card" style={{ background: "var(--surface-2)", padding: 16 }}>
-            <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>Testament ID: {testamentId}</div>
+            <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>ID du testament : {testamentId}</div>
             <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>CID: {ipfsCid}</div>
-            <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>Hash: {documentHash}</div>
+            <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>Hash : {documentHash}</div>
           </div>
           <p style={{ color: "var(--text-secondary)", marginTop: 12, marginBottom: 14 }}>
-            Once submitted, a certified notary will review and either approve or reject your testament.
+            Une fois soumis, un notaire certifié examinera et validera ou rejettera votre testament.
           </p>
           <button type="button" className="btn-primary" onClick={submitForReview} disabled={submittingReview}>
             {submittingReview ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <span className="spinner" /> Submitting...
+                <span className="spinner" /> Soumission...
               </span>
             ) : (
-              "Submit for Review"
+              "Soumettre"
             )}
           </button>
           <div style={{ marginTop: 10 }}>
             <Link to={isDemoMode ? "/demo/testator" : "/dashboard"} className="btn-secondary">
-              View My Testaments Now
+              Voir mes testaments
             </Link>
           </div>
         </div>
@@ -446,10 +452,10 @@ export default function Upload() {
 
       {step === 4 ? (
         <div className="card">
-          <h3 style={{ fontSize: 28, marginBottom: 10 }}>Step 4 — Register On-Chain</h3>
+          <h3 style={{ fontSize: 28, marginBottom: 10 }}>Étape 4 — Enregistrer sur la blockchain</h3>
           <div className="card" style={{ background: "var(--surface-2)", padding: 16 }}>
             <p style={{ margin: 0, color: "var(--text-secondary)" }}>
-              This transaction stores your CID and hash on-chain to provide immutable proof.
+              Cette transaction enregistre votre CID et votre hash on-chain pour fournir une preuve immuable.
             </p>
           </div>
           <div
@@ -463,20 +469,20 @@ export default function Upload() {
               fontSize: 13
             }}
           >
-            Gas fee notice: Make sure your wallet has enough Sepolia ETH.
+            Frais de gas : assurez-vous d’avoir assez d’ETH Sepolia.
           </div>
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button type="button" className="btn-primary" onClick={registerOnChain} disabled={chainPending}>
               {chainPending ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span className="spinner" /> {isDemoMode ? demoChainStage || "Confirming..." : "Confirming..."}
+                  <span className="spinner" /> {isDemoMode ? demoChainStage || "Confirmation..." : "Confirmation..."}
                 </span>
               ) : (
-                "Register on Blockchain"
+                "Enregistrer sur la blockchain"
               )}
             </button>
             <Link to={isDemoMode ? "/demo/testator" : "/dashboard"} className="btn-secondary">
-              Back to Dashboard
+              Retour au tableau de bord
             </Link>
           </div>
           {txHash ? (
@@ -489,7 +495,7 @@ export default function Upload() {
                 padding: "12px 14px"
               }}
             >
-              <div style={{ color: "var(--success)", marginBottom: 4 }}>Transaction confirmed</div>
+              <div style={{ color: "var(--success)", marginBottom: 4 }}>Transaction confirmée</div>
               <a
                 href={`https://sepolia.etherscan.io/tx/${txHash}`}
                 target="_blank"
@@ -503,7 +509,7 @@ export default function Upload() {
           {isDemoMode && txHash ? (
             <div style={{ marginTop: 12 }}>
               <Link to="/demo/testator" className="btn-primary">
-                Go to Dashboard
+                Aller au tableau de bord
               </Link>
             </div>
           ) : null}

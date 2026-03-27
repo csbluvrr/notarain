@@ -46,7 +46,7 @@ export default function Dashboard() {
       const res = await api.get("/api/testament/my");
       setTestaments(res?.data?.testaments || []);
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Failed to load testaments");
+      toast.error(err?.response?.data?.error || err?.message || "Impossible de charger les testaments");
     } finally {
       setLoading(false);
     }
@@ -95,9 +95,9 @@ export default function Dashboard() {
       setVerifyingIntegrity(true);
       const res = await demoVerifyHash(detailTarget);
       setIntegrityResult(res);
-      toast.success("Document integrity verified");
+      toast.success("Intégrité du document vérifiée");
     } catch (err) {
-      toast.error(err?.message || "Verification failed");
+      toast.error(err?.message || "Échec de la vérification");
     } finally {
       setVerifyingIntegrity(false);
     }
@@ -110,18 +110,18 @@ export default function Dashboard() {
     if (!confirm.open) return null;
     if (confirm.type === "deleteDraft") {
       return {
-        title: "Delete Draft",
-        description: "Are you sure you want to delete this draft? This cannot be undone.",
-        confirmText: "Delete",
+        title: "Supprimer le brouillon",
+        description: "Êtes-vous sûr de vouloir supprimer ce brouillon ? Cette action est irréversible.",
+        confirmText: "Supprimer",
         variant: "danger"
       };
     }
     if (confirm.type === "revoke") {
       return {
-        title: "Revoke Testament",
+        title: "Révoquer le testament",
         description:
-          "This will permanently revoke this testament on the blockchain. You will need to create and submit a new testament if you change your mind. This action is irreversible.",
-        confirmText: "Revoke",
+          "Cette action révoque définitivement ce testament sur la blockchain. Vous devrez créer et soumettre un nouveau testament si vous changez d’avis. Cette action est irréversible.",
+        confirmText: "Révoquer",
         variant: "danger"
       };
     }
@@ -135,15 +135,15 @@ export default function Dashboard() {
       if (confirm.type === "deleteDraft") {
         setRemovingId(t._id);
         await demoDeleteTestament(t._id);
-        toast.success("Draft deleted");
+        toast.success("Brouillon supprimé");
       } else if (confirm.type === "revoke") {
         setRevokingId(t._id);
         await demoRevokeTestament(t._id);
-        toast.success("Testament revoked on blockchain");
+        toast.success("Testament révoqué sur la blockchain");
       }
       closeConfirm();
     } catch (err) {
-      toast.error(err?.message || "Action failed");
+      toast.error(err?.message || "Action échouée");
     } finally {
       setRemovingId("");
       setRevokingId("");
@@ -154,9 +154,9 @@ export default function Dashboard() {
     try {
       setSubmittingId(t._id);
       await demoSubmitTestament(t._id);
-      toast.success("Submitted for notary review");
+      toast.success("Soumis à la revue du notaire");
     } catch (err) {
-      toast.error(err?.message || "Submit failed");
+      toast.error(err?.message || "Échec de soumission");
     } finally {
       setSubmittingId("");
     }
@@ -166,21 +166,21 @@ export default function Dashboard() {
     <section className="page-container">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
-          <h1 className="page-title">My Testaments</h1>
-          <p className="page-subtitle">Connected as {truncateAddress((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "")}</p>
+          <h1 className="page-title">Mes testaments</h1>
+          <p className="page-subtitle">Connecté en tant que {truncateAddress((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "")}</p>
         </div>
         <Link to={isDemoMode ? "/demo/upload" : "/upload"} className="btn-primary" style={{ alignSelf: "start" }}>
-          Upload New Testament
+          Déposer un nouveau testament
         </Link>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 26 }}>
         {[
-          { label: "Total Testaments", value: stats.total, key: "all" },
-          { label: "Pending Review", value: stats.pending, key: "pending" },
-          { label: "Approved", value: stats.approved, key: "approved" },
-          { label: "Executed", value: stats.executed, key: "executed" },
-          { label: "Draft", value: stats.draft, key: "draft" }
+          { label: "Total", value: stats.total, key: "all" },
+          { label: "En attente", value: stats.pending, key: "pending" },
+          { label: "Validés", value: stats.approved, key: "approved" },
+          { label: "Exécutés", value: stats.executed, key: "executed" },
+          { label: "Brouillons", value: stats.draft, key: "draft" }
         ].map((s) => (
           <button
             key={s.label}
@@ -217,12 +217,12 @@ export default function Dashboard() {
             <path d="M8 2h8l5 5v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
             <path d="M14 2v6h6" />
           </svg>
-          <h3 style={{ fontSize: 24, marginTop: 10 }}>No testaments yet</h3>
+          <h3 style={{ fontSize: 24, marginTop: 10 }}>Aucun testament</h3>
           <p style={{ color: "var(--text-secondary)", marginTop: 6, marginBottom: 16 }}>
-            Start by uploading your first encrypted testament document.
+            Commencez par déposer votre premier document de testament chiffré.
           </p>
           <Link to="/upload" className="btn-primary">
-            Upload Testament
+            Déposer un testament
           </Link>
         </div>
       ) : (
@@ -234,36 +234,36 @@ export default function Dashboard() {
                 actions={
                   <>
                     <button className="btn-secondary" onClick={() => openDetails(t)}>
-                      View Details
+                      Voir les détails
                     </button>
 
                     {isDemoMode && t.status === "draft" ? (
                       <button className="btn-primary" onClick={() => submitDraft(t)} disabled={submittingId === t._id}>
                         {submittingId === t._id ? (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                            <span className="spinner" /> Submitting...
+                            <span className="spinner" /> Soumission...
                           </span>
                         ) : (
-                          "Submit for Review"
+                          "Soumettre au notaire"
                         )}
                       </button>
                     ) : null}
 
                     {isDemoMode && t.status === "draft" ? (
                       <button className="btn-danger" onClick={() => openConfirm("deleteDraft", t)} disabled={removingId === t._id}>
-                        Delete Draft
+                        Supprimer
                       </button>
                     ) : null}
 
                     {t.status === "approved" ? (
                       <button className="btn-secondary" onClick={() => setManageTarget(t)}>
-                        Manage Heirs
+                        Gérer les bénéficiaires
                       </button>
                     ) : null}
 
                     {isDemoMode && t.status === "approved" ? (
                       <button className="btn-secondary" style={{ borderColor: "var(--danger)", color: "var(--danger)" }} onClick={() => openConfirm("revoke", t)} disabled={revokingId === t._id}>
-                        Revoke
+                        Révoquer
                       </button>
                     ) : null}
                   </>
@@ -287,10 +287,10 @@ export default function Dashboard() {
                   }}
                 >
                   <div style={{ fontSize: 13 }}>
-                    Rejected: <span style={{ color: "var(--text-primary)" }}>{t.rejectionReason}</span>
+                    Rejeté : <span style={{ color: "var(--text-primary)" }}>{t.rejectionReason}</span>
                   </div>
                   <button type="button" className="btn-secondary" onClick={() => navigate("/demo/upload")}>
-                    Resubmit
+                    Resoumettre
                   </button>
                 </div>
               ) : null}

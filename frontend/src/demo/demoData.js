@@ -40,11 +40,11 @@ export const initialTestatorTestaments = [
       { walletAddress: '0x2b8e4f1c9d3a7e6b5f4c3d2e1a9b8c7d6e5f4a047', name: 'Sara Gorfti', share: '100% of estate' }
     ],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-01-20T10:30:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-01-21T09:00:00Z', actor: '0x4959...8b51', note: 'Sent to notary queue' },
-      { status: 'approved', label: 'Approved by Notary', date: '2026-02-01T11:30:00Z', actor: '0x7f3a...2c19', note: 'Document verified and validated' },
-      { status: 'approved', label: 'Registered on Blockchain', date: '2026-02-01T12:00:00Z', actor: '0x4959...8b51', note: 'Transaction #7 confirmed on Sepolia' },
-      { status: 'executed', label: 'Executed by Notary', date: '2026-03-20T14:45:00Z', actor: '0x7f3a...2c19', note: 'Death confirmed — heirs granted access' }
+      { status: 'draft', label: 'Testament créé', date: '2026-01-20T10:30:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-01-21T09:00:00Z', actor: '0x4959...8b51', note: 'Envoyé dans la file d’attente du notaire' },
+      { status: 'approved', label: 'Validé par le notaire', date: '2026-02-01T11:30:00Z', actor: '0x7f3a...2c19', note: 'Document vérifié et validé' },
+      { status: 'approved', label: 'Enregistré sur la blockchain', date: '2026-02-01T12:00:00Z', actor: '0x4959...8b51', note: 'Transaction #7 confirmée sur Sepolia' },
+      { status: 'executed', label: 'Exécuté par le notaire', date: '2026-03-20T14:45:00Z', actor: '0x7f3a...2c19', note: 'Décès confirmé — accès accordé aux héritiers' }
     ]
   },
   {
@@ -65,12 +65,12 @@ export const initialTestatorTestaments = [
       { walletAddress: '0x9c1a3e5f7b2d4c6d8e0f2a4b6c8d0e2f4a6b8c0d2', name: 'Nisrine Gorfti', share: 'Villa — Route de Fès, Marrakech' }
     ],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-02-10T09:15:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-02-11T10:00:00Z', actor: '0x4959...8b51', note: 'Sent to notary queue' },
-      { status: 'rejected', label: 'Rejected by Notary', date: '2026-02-15T14:00:00Z', actor: '0x7f3a...2c19', note: 'Missing witness signatures on page 3' },
-      { status: 'pending', label: 'Resubmitted for Review', date: '2026-02-20T09:30:00Z', actor: '0x4959...8b51', note: 'Document corrected and resubmitted' },
-      { status: 'approved', label: 'Approved by Notary', date: '2026-03-01T11:00:00Z', actor: '0x7f3a...2c19', note: 'All requirements satisfied' },
-      { status: 'approved', label: 'Registered on Blockchain', date: '2026-03-01T11:30:00Z', actor: '0x4959...8b51', note: 'Transaction #12 confirmed on Sepolia' }
+      { status: 'draft', label: 'Testament créé', date: '2026-02-10T09:15:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-02-11T10:00:00Z', actor: '0x4959...8b51', note: 'Envoyé dans la file d’attente du notaire' },
+      { status: 'rejected', label: 'Rejeté par le notaire', date: '2026-02-15T14:00:00Z', actor: '0x7f3a...2c19', note: 'Signatures de témoins manquantes à la page 3' },
+      { status: 'pending', label: 'Resoumis au notaire', date: '2026-02-20T09:30:00Z', actor: '0x4959...8b51', note: 'Document corrigé et resoumis' },
+      { status: 'approved', label: 'Validé par le notaire', date: '2026-03-01T11:00:00Z', actor: '0x7f3a...2c19', note: 'Toutes les exigences sont satisfaites' },
+      { status: 'approved', label: 'Enregistré sur la blockchain', date: '2026-03-01T11:30:00Z', actor: '0x4959...8b51', note: 'Transaction #12 confirmée sur Sepolia' }
     ]
   },
   {
@@ -88,8 +88,8 @@ export const initialTestatorTestaments = [
     notaryWallet: null,
     heirs: [],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-03-26T16:00:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-03-26T16:30:00Z', actor: '0x4959...8b51', note: 'Awaiting notary assignment' }
+      { status: 'draft', label: 'Testament créé', date: '2026-03-26T16:00:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-03-26T16:30:00Z', actor: '0x4959...8b51', note: 'En attente d’affectation du notaire' }
     ]
   },
   {
@@ -107,7 +107,7 @@ export const initialTestatorTestaments = [
     notaryWallet: null,
     heirs: [],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-03-27T08:00:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' }
+      { status: 'draft', label: 'Testament créé', date: '2026-03-27T08:00:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' }
     ]
   }
 ]
@@ -152,8 +152,8 @@ export const initialAllNotaryTestaments = [
     createdAt: '2026-03-26T16:30:00Z',
     heirs: [],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-03-26T16:00:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-03-26T16:30:00Z', actor: '0x4959...8b51', note: 'Awaiting notary assignment' }
+      { status: 'draft', label: 'Testament créé', date: '2026-03-26T16:00:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-03-26T16:30:00Z', actor: '0x4959...8b51', note: 'En attente d’affectation du notaire' }
     ]
   },
   {
@@ -168,8 +168,8 @@ export const initialAllNotaryTestaments = [
     createdAt: '2026-03-25T08:30:00Z',
     heirs: [],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-03-25T08:00:00Z', actor: '0x3c7d...c2d4', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-03-25T08:30:00Z', actor: '0x3c7d...c2d4', note: 'Awaiting notary assignment' }
+      { status: 'draft', label: 'Testament créé', date: '2026-03-25T08:00:00Z', actor: '0x3c7d...c2d4', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-03-25T08:30:00Z', actor: '0x3c7d...c2d4', note: 'En attente d’affectation du notaire' }
     ]
   },
   {
@@ -184,11 +184,11 @@ export const initialAllNotaryTestaments = [
     createdAt: '2026-01-20T10:30:00Z',
     heirs: [{ walletAddress: '0x2b8e4f1c9d3a7e6b5f4c3d2e1a9b8c7d6e5f4a047', name: 'Sara Gorfti', share: '100% of estate' }],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-01-20T10:30:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-01-21T09:00:00Z', actor: '0x4959...8b51', note: 'Sent to notary queue' },
-      { status: 'approved', label: 'Approved by Notary', date: '2026-02-01T11:30:00Z', actor: '0x7f3a...2c19', note: 'Document verified and validated' },
-      { status: 'approved', label: 'Registered on Blockchain', date: '2026-02-01T12:00:00Z', actor: '0x4959...8b51', note: 'Transaction #7 confirmed on Sepolia' },
-      { status: 'executed', label: 'Executed by Notary', date: '2026-03-20T14:45:00Z', actor: '0x7f3a...2c19', note: 'Death confirmed — heirs granted access' }
+      { status: 'draft', label: 'Testament créé', date: '2026-01-20T10:30:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-01-21T09:00:00Z', actor: '0x4959...8b51', note: 'Envoyé dans la file d’attente du notaire' },
+      { status: 'approved', label: 'Validé par le notaire', date: '2026-02-01T11:30:00Z', actor: '0x7f3a...2c19', note: 'Document vérifié et validé' },
+      { status: 'approved', label: 'Enregistré sur la blockchain', date: '2026-02-01T12:00:00Z', actor: '0x4959...8b51', note: 'Transaction #7 confirmée sur Sepolia' },
+      { status: 'executed', label: 'Exécuté par le notaire', date: '2026-03-20T14:45:00Z', actor: '0x7f3a...2c19', note: 'Décès confirmé — accès accordé aux héritiers' }
     ]
   },
   {
@@ -206,12 +206,12 @@ export const initialAllNotaryTestaments = [
       { walletAddress: '0x9c1a3e5f7b2d4c6d8e0f2a4b6c8d0e2f4a6b8c0d2', name: 'Nisrine Gorfti', share: 'Villa — Route de Fès, Marrakech' }
     ],
     timeline: [
-      { status: 'draft', label: 'Testament Created', date: '2026-02-10T09:15:00Z', actor: '0x4959...8b51', note: 'Document uploaded and encrypted' },
-      { status: 'pending', label: 'Submitted for Review', date: '2026-02-11T10:00:00Z', actor: '0x4959...8b51', note: 'Sent to notary queue' },
-      { status: 'rejected', label: 'Rejected by Notary', date: '2026-02-15T14:00:00Z', actor: '0x7f3a...2c19', note: 'Missing witness signatures on page 3' },
-      { status: 'pending', label: 'Resubmitted for Review', date: '2026-02-20T09:30:00Z', actor: '0x4959...8b51', note: 'Document corrected and resubmitted' },
-      { status: 'approved', label: 'Approved by Notary', date: '2026-03-01T11:00:00Z', actor: '0x7f3a...2c19', note: 'All requirements satisfied' },
-      { status: 'approved', label: 'Registered on Blockchain', date: '2026-03-01T11:30:00Z', actor: '0x4959...8b51', note: 'Transaction #12 confirmed on Sepolia' }
+      { status: 'draft', label: 'Testament créé', date: '2026-02-10T09:15:00Z', actor: '0x4959...8b51', note: 'Document envoyé et chiffré' },
+      { status: 'pending', label: 'Soumis au notaire', date: '2026-02-11T10:00:00Z', actor: '0x4959...8b51', note: 'Envoyé dans la file d’attente du notaire' },
+      { status: 'rejected', label: 'Rejeté par le notaire', date: '2026-02-15T14:00:00Z', actor: '0x7f3a...2c19', note: 'Signatures de témoins manquantes à la page 3' },
+      { status: 'pending', label: 'Resoumis au notaire', date: '2026-02-20T09:30:00Z', actor: '0x4959...8b51', note: 'Document corrigé et resoumis' },
+      { status: 'approved', label: 'Validé par le notaire', date: '2026-03-01T11:00:00Z', actor: '0x7f3a...2c19', note: 'Toutes les exigences sont satisfaites' },
+      { status: 'approved', label: 'Enregistré sur la blockchain', date: '2026-03-01T11:30:00Z', actor: '0x4959...8b51', note: 'Transaction #12 confirmée sur Sepolia' }
     ]
   }
 ]
@@ -228,12 +228,12 @@ export const initialHeirTestaments = [
     txHash: '0x9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1',
     createdAt: '2026-01-20T10:30:00Z',
     notaryWallet: '0x7f3a9c2d1e4b5f6a8c9d2e3f4a5b6c7d8e9f2c19',
-    myShare: '100% of estate',
+    myShare: '100% de la succession',
     heirs: [{ walletAddress: '0x2b8e4f1c9d3a7e6b5f4c3d2e1a9b8c7d6e5f4a047', name: 'Sara Gorfti', share: '100% of estate' }],
     timeline: [
-      { status: 'approved', label: 'Approved by Notary', date: '2026-02-01T11:30:00Z', actor: '0x7f3a...2c19', note: 'Document verified and validated' },
-      { status: 'approved', label: 'Registered on Blockchain', date: '2026-02-01T12:00:00Z', actor: '0x4959...8b51', note: 'Transaction #7 confirmed on Sepolia' },
-      { status: 'executed', label: 'Executed by Notary', date: '2026-03-20T14:45:00Z', actor: '0x7f3a...2c19', note: 'Death confirmed — heirs granted access' }
+      { status: 'approved', label: 'Validé par le notaire', date: '2026-02-01T11:30:00Z', actor: '0x7f3a...2c19', note: 'Document vérifié et validé' },
+      { status: 'approved', label: 'Enregistré sur la blockchain', date: '2026-02-01T12:00:00Z', actor: '0x4959...8b51', note: 'Transaction #7 confirmée sur Sepolia' },
+      { status: 'executed', label: 'Exécuté par le notaire', date: '2026-03-20T14:45:00Z', actor: '0x7f3a...2c19', note: 'Décès confirmé — accès accordé aux héritiers' }
     ]
   },
   {
@@ -247,14 +247,14 @@ export const initialHeirTestaments = [
     txHash: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2',
     createdAt: '2026-02-10T09:15:00Z',
     notaryWallet: '0x7f3a9c2d1e4b5f6a8c9d2e3f4a5b6c7d8e9f2c19',
-    myShare: 'Apartment — 12 Rue Hassan II, Marrakech',
+    myShare: 'Appartement — 12 Rue Hassan II, Marrakech',
     heirs: [
       { walletAddress: '0x2b8e4f1c9d3a7e6b5f4c3d2e1a9b8c7d6e5f4a047', name: 'Sara Gorfti', share: 'Apartment — 12 Rue Hassan II, Marrakech' },
       { walletAddress: '0x9c1a3e5f7b2d4c6d8e0f2a4b6c8d0e2f4a6b8c0d2', name: 'Nisrine Gorfti', share: 'Villa — Route de Fès, Marrakech' }
     ],
     timeline: [
-      { status: 'approved', label: 'Approved by Notary', date: '2026-03-01T11:00:00Z', actor: '0x7f3a...2c19', note: 'All requirements satisfied' },
-      { status: 'approved', label: 'Registered on Blockchain', date: '2026-03-01T11:30:00Z', actor: '0x4959...8b51', note: 'Transaction #12 confirmed on Sepolia' }
+      { status: 'approved', label: 'Validé par le notaire', date: '2026-03-01T11:00:00Z', actor: '0x7f3a...2c19', note: 'Toutes les exigences sont satisfaites' },
+      { status: 'approved', label: 'Enregistré sur la blockchain', date: '2026-03-01T11:30:00Z', actor: '0x4959...8b51', note: 'Transaction #12 confirmée sur Sepolia' }
     ]
   }
 ]

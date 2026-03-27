@@ -18,7 +18,7 @@ function truncateAddress(address = "") {
 function formatDate(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("fr-FR", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export default function NotaryDashboard() {
@@ -51,7 +51,7 @@ export default function NotaryDashboard() {
       setPending(pendingRes?.data?.testaments || []);
       setAll(allRes?.data?.testaments || []);
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Failed to load notary data");
+      toast.error(err?.response?.data?.error || err?.message || "Impossible de charger les données notaire");
     } finally {
       setLoading(false);
     }
@@ -80,24 +80,24 @@ export default function NotaryDashboard() {
     if (!modal.open || !modal.type) return null;
     if (modal.type === "approve") {
       return {
-        title: "Approve Testament",
-        description: "Are you sure you want to approve this testament?",
-        confirmText: "Approve",
+        title: "Valider le testament",
+        description: "Êtes-vous sûr de vouloir valider ce testament ?",
+        confirmText: "Valider",
         variant: "approve"
       };
     }
     if (modal.type === "reject") {
       return {
-        title: "Reject Testament",
-        description: "Are you sure you want to reject this testament?",
-        confirmText: "Reject",
+        title: "Rejeter le testament",
+        description: "Êtes-vous sûr de vouloir rejeter ce testament ?",
+        confirmText: "Rejeter",
         variant: "danger"
       };
     }
     return {
-      title: "Confirm Death",
-      description: "This action executes the testament. Continue?",
-      confirmText: "Confirm Death",
+      title: "Confirmer le décès",
+      description: "Cette action exécute le testament. Continuer ?",
+      confirmText: "Confirmer",
       variant: "gold"
     };
   }, [modal]);
@@ -121,7 +121,7 @@ export default function NotaryDashboard() {
             await tx.wait();
           }
         }
-        toast.success("Testament approved");
+        toast.success("Testament validé");
       } else if (modal.type === "reject") {
         if (isDemoMode) {
           await demoRejectTestament(item._id, rejectReason);
@@ -133,7 +133,7 @@ export default function NotaryDashboard() {
             await tx.wait();
           }
         }
-        toast.success("Testament rejected");
+        toast.success("Testament rejeté");
       } else {
         if (isDemoMode) {
           await demoExecuteTestament(item._id);
@@ -145,14 +145,14 @@ export default function NotaryDashboard() {
             await tx.wait();
           }
         }
-        toast.success("Death confirmed");
+        toast.success("Décès confirmé");
       }
       closeModal();
       if (!isDemoMode) {
         await load();
       }
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Action failed");
+      toast.error(err?.response?.data?.error || err?.message || "Action échouée");
     } finally {
       setRemovingId("");
     }
@@ -174,16 +174,16 @@ export default function NotaryDashboard() {
   const copyHash = async (hash) => {
     try {
       await navigator.clipboard.writeText(hash);
-      toast.success("Document hash copied");
+      toast.success("Hash copié");
     } catch {
-      toast.error("Copy failed");
+      toast.error("Échec de la copie");
     }
   };
 
   return (
     <section className="page-container">
-      <h1 className="page-title">Review Panel</h1>
-      <p className="page-subtitle">Connected notary: {truncateAddress((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "")}</p>
+      <h1 className="page-title">Espace notaire</h1>
+      <p className="page-subtitle">Notaire connecté : {truncateAddress((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "")}</p>
 
       <div style={{ marginBottom: 20 }}>
         <span
@@ -196,7 +196,7 @@ export default function NotaryDashboard() {
             padding: "5px 10px"
           }}
         >
-          Certified Notary
+          Notaire certifié
         </span>
       </div>
 
@@ -210,8 +210,8 @@ export default function NotaryDashboard() {
         }}
       >
         {[
-          { key: "pending", label: "Pending" },
-          { key: "all", label: "All Testaments" }
+          { key: "pending", label: "En attente" },
+          { key: "all", label: "Tous les testaments" }
         ].map((t) => {
           const active = tab === t.key;
           return (
@@ -283,23 +283,23 @@ export default function NotaryDashboard() {
                 ) : null}
               </div>
               <div style={{ marginTop: 5, color: "var(--text-secondary)", fontSize: 11, fontFamily: "monospace" }}>
-                Hash: {String(t.documentHash || "").slice(0, 18)}...{String(t.documentHash || "").slice(-8)}
+                Hash : {String(t.documentHash || "").slice(0, 18)}...{String(t.documentHash || "").slice(-8)}
                 <button
                   type="button"
                   className="btn-secondary"
                   style={{ marginLeft: 8, padding: "2px 8px", fontSize: 11 }}
                   onClick={() => copyHash(t.documentHash)}
                 >
-                  Copy
+                  Copier
                 </button>
               </div>
 
               <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
                 <button className="btn-approve" onClick={() => openModal("approve", t)}>
-                  Approve
+                  Valider
                 </button>
                 <button className="btn-danger" onClick={() => openModal("reject", t)}>
-                  Reject
+                  Rejeter
                 </button>
               </div>
             </div>
@@ -313,7 +313,7 @@ export default function NotaryDashboard() {
               style={{ maxWidth: 320 }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by filename or wallet..."
+              placeholder="Rechercher par fichier ou adresse..."
             />
             <select
               className="input"
@@ -321,11 +321,11 @@ export default function NotaryDashboard() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="executed">Executed</option>
+              <option value="all">Tous les statuts</option>
+              <option value="pending">En attente</option>
+              <option value="approved">Validé</option>
+              <option value="rejected">Rejeté</option>
+              <option value="executed">Exécuté</option>
             </select>
           </div>
           <div
@@ -339,9 +339,9 @@ export default function NotaryDashboard() {
               fontSize: 12
             }}
           >
-            <div>Testator</div>
-            <div>File</div>
-            <div>Status</div>
+            <div>Testateur</div>
+            <div>Fichier</div>
+            <div>Statut</div>
             <div>Date</div>
             <div>Actions</div>
           </div>
@@ -364,7 +364,7 @@ export default function NotaryDashboard() {
               <div>
                 {t.status === "approved" || t.status === "executed" ? (
                   <button className="btn-gold-action" onClick={() => openModal("confirmDeath", t)}>
-                    Confirm Death
+                    Confirmer le décès
                   </button>
                 ) : null}
               </div>
@@ -385,17 +385,17 @@ export default function NotaryDashboard() {
         {isDemoMode && modal.type === "reject" ? (
           <div>
             <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>
-              Reason for rejection
+              Motif du rejet
             </label>
             <textarea
               className="input"
               style={{ minHeight: 80, resize: "vertical" }}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g. Missing witness signatures on page 3"
+              placeholder="Ex. Signatures de témoins manquantes à la page 3"
             />
             <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
-              {Math.max(0, 10 - String(rejectReason || "").trim().length)} more character(s) required.
+              {Math.max(0, 10 - String(rejectReason || "").trim().length)} caractère(s) restant(s).
             </div>
           </div>
         ) : null}

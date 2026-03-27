@@ -8,7 +8,7 @@ const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 function formatDateTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString("fr-FR", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -51,12 +51,12 @@ export default function TestamentDetailModal({
 
   if (!open || !testament) return null;
 
-  const copy = async (value, label = "Copied") => {
+  const copy = async (value, label = "Copié") => {
     try {
       await navigator.clipboard.writeText(String(value || ""));
       toast.success(label);
     } catch {
-      toast.error("Copy failed");
+      toast.error("Échec de la copie");
     }
   };
 
@@ -87,13 +87,13 @@ export default function TestamentDetailModal({
           <div style={{ minWidth: 240 }}>
             <div style={{ fontSize: 28, fontFamily: "'Cormorant Garamond', serif" }}>{testament.originalFileName}</div>
             <div style={{ marginTop: 8, color: "var(--text-muted)", fontSize: 12 }}>
-              Created: {formatDateTime(testament.createdAt)} · Updated: {formatDateTime(testament.updatedAt || testament.createdAt)}
+              Créé : {formatDateTime(testament.createdAt)} · Mis à jour : {formatDateTime(testament.updatedAt || testament.createdAt)}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "start", gap: 10 }}>
             <StatusBadge status={testament.status} />
             <button type="button" className="btn-secondary" onClick={onClose} style={{ padding: "8px 12px" }}>
-              Close
+              Fermer
             </button>
           </div>
         </div>
@@ -109,13 +109,13 @@ export default function TestamentDetailModal({
               color: "var(--danger)"
             }}
           >
-            Rejected: <span style={{ color: "var(--text-primary)" }}>{testament.rejectionReason}</span>
+            Rejeté : <span style={{ color: "var(--text-primary)" }}>{testament.rejectionReason}</span>
           </div>
         ) : null}
 
         <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
           <div className="card" style={{ background: "var(--surface-2)", padding: 16 }}>
-            <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>Storage</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>Stockage</div>
             <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
               IPFS CID:{" "}
               {ipfsLink ? (
@@ -127,14 +127,14 @@ export default function TestamentDetailModal({
               )}
             </div>
             <div style={{ marginTop: 8, fontSize: 13, color: "var(--text-secondary)" }}>
-              Hash: <span style={{ fontFamily: "monospace" }}>{truncateMiddle(testament.documentHash, 18, 8)}</span>
+              Hash : <span style={{ fontFamily: "monospace" }}>{truncateMiddle(testament.documentHash, 18, 8)}</span>
               <button
                 type="button"
                 className="btn-secondary"
                 style={{ marginLeft: 8, padding: "2px 8px", fontSize: 11 }}
-                onClick={() => copy(testament.documentHash, "Hash copied")}
+                onClick={() => copy(testament.documentHash, "Hash copié")}
               >
-                Copy
+                Copier
               </button>
             </div>
           </div>
@@ -157,12 +157,12 @@ export default function TestamentDetailModal({
           </div>
 
           <div className="card" style={{ background: "var(--surface-2)", padding: 16 }}>
-            <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>Parties</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>Acteurs</div>
             <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-              Testator: <span style={{ fontFamily: "monospace" }}>{truncateMiddle(testament.testatorWallet, 10, 6)}</span>
+              Testateur : <span style={{ fontFamily: "monospace" }}>{truncateMiddle(testament.testatorWallet, 10, 6)}</span>
             </div>
             <div style={{ marginTop: 8, fontSize: 13, color: "var(--text-secondary)" }}>
-              Notary:{" "}
+              Notaire :{" "}
               <span style={{ fontFamily: "monospace" }}>{testament.notaryWallet ? truncateMiddle(testament.notaryWallet, 10, 6) : "-"}</span>
             </div>
           </div>
@@ -170,7 +170,7 @@ export default function TestamentDetailModal({
 
         {Array.isArray(testament.heirs) && testament.heirs.length > 0 ? (
           <div style={{ marginTop: 18 }}>
-            <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 10 }}>Beneficiaries</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 10 }}>Bénéficiaires</div>
             <div style={{ display: "grid", gap: 8 }}>
               {testament.heirs.map((h, idx) => (
                 <div
@@ -202,10 +202,10 @@ export default function TestamentDetailModal({
             <button type="button" className="btn-secondary" onClick={onVerifyIntegrity} disabled={verifyingIntegrity}>
               {verifyingIntegrity ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span className="spinner" /> Verifying...
+                  <span className="spinner" /> Vérification...
                 </span>
               ) : (
-                "Verify Document Integrity"
+                "Vérifier l’intégrité du document"
               )}
             </button>
           ) : null}
@@ -221,13 +221,13 @@ export default function TestamentDetailModal({
                 fontSize: 13
               }}
             >
-              ✓ Integrity verified
+              ✓ Intégrité vérifiée
             </div>
           ) : null}
         </div>
 
         <div style={{ marginTop: 24 }}>
-          <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>Timeline</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>Historique</div>
           <TestamentTimeline events={testament.timeline || []} />
         </div>
       </div>

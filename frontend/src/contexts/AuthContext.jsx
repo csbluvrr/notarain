@@ -28,14 +28,14 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       if (!window.ethereum) {
-        throw new Error("MetaMask not found. Please install it.");
+        throw new Error("MetaMask introuvable. Veuillez l’installer.");
       }
 
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts"
       });
       if (!accounts || !accounts.length) {
-        throw new Error("No wallet accounts found");
+        throw new Error("Aucun compte trouvé dans le portefeuille");
       }
 
       const walletAddress = accounts[0].toLowerCase();
@@ -52,14 +52,14 @@ export function AuthProvider({ children }) {
             params: [{ chainId: chainIdParam }]
           });
         } catch (err) {
-          throw new Error("Please switch your wallet to Sepolia");
+          throw new Error("Veuillez basculer votre portefeuille sur Sepolia");
         }
       }
 
       const nonceRes = await api.post("/api/auth/nonce", { walletAddress });
       const message = nonceRes?.data?.message;
       if (!message) {
-        throw new Error("Failed to fetch login nonce");
+        throw new Error("Impossible de récupérer le nonce de connexion");
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
       const newToken = verifyRes?.data?.token;
       const newUser = verifyRes?.data?.user;
       if (!newToken || !newUser) {
-        throw new Error("Login failed");
+        throw new Error("Échec de connexion");
       }
 
       localStorage.setItem("notarain_token", newToken);

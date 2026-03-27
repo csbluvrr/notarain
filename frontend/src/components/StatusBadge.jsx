@@ -2,7 +2,7 @@ import React from "react";
 
 const STATUS_META = {
   draft: {
-    label: "Draft",
+    label: "Brouillon",
     style: {
       background: "var(--surface-3)",
       borderColor: "var(--border-light)",
@@ -10,7 +10,7 @@ const STATUS_META = {
     }
   },
   pending: {
-    label: "Pending Review",
+    label: "En attente",
     style: {
       background: "var(--warning-dim)",
       borderColor: "var(--warning)",
@@ -18,7 +18,7 @@ const STATUS_META = {
     }
   },
   approved: {
-    label: "Approved",
+    label: "Validé",
     style: {
       background: "var(--success-dim)",
       borderColor: "var(--success)",
@@ -26,7 +26,7 @@ const STATUS_META = {
     }
   },
   rejected: {
-    label: "Rejected",
+    label: "Rejeté",
     style: {
       background: "var(--danger-dim)",
       borderColor: "var(--danger)",
@@ -34,7 +34,7 @@ const STATUS_META = {
     }
   },
   executed: {
-    label: "Executed",
+    label: "Exécuté",
     style: {
       background: "var(--accent-dim)",
       borderColor: "var(--accent)",
@@ -42,7 +42,7 @@ const STATUS_META = {
     }
   },
   revoked: {
-    label: "Revoked",
+    label: "Révoqué",
     style: {
       background: "var(--surface-3)",
       borderColor: "var(--border-light)",
