@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import useAuth from "../hooks/useAuth";
+import { useDemoMode } from "../demo/DemoContext";
 import ConnectWallet from "./ConnectWallet";
 
 function truncateMiddle(text, left = 6, right = 4) {
@@ -22,6 +23,7 @@ function roleLabel(role) {
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { isDemoMode, demoUser, exitDemo } = useDemoMode();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const navigate = useNavigate();
 
@@ -89,7 +91,36 @@ export default function Navbar() {
         </button>
 
         <div className="navbar-right-desktop" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {user ? (
+          {isDemoMode ? (
+            <>
+              <span
+                style={{
+                  padding: "3px 12px",
+                  borderRadius: 20,
+                  background: "var(--warning-dim)",
+                  border: "1px solid var(--warning)",
+                  color: "var(--warning)",
+                  fontSize: 11,
+                  fontWeight: 500
+                }}
+              >
+                DEMO MODE
+              </span>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                {demoUser?.name} ({roleLabel(demoUser?.role)})
+              </span>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  exitDemo();
+                  navigate("/");
+                }}
+              >
+                Exit Demo
+              </button>
+            </>
+          ) : user ? (
             <>
               <span
                 style={{
@@ -126,7 +157,23 @@ export default function Navbar() {
             gap: 10
           }}
         >
-          {user ? (
+          {isDemoMode ? (
+            <>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                {demoUser?.name} ({roleLabel(demoUser?.role)})
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  exitDemo();
+                  navigate("/");
+                }}
+              >
+                Exit Demo
+              </button>
+            </>
+          ) : user ? (
             <>
               <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{truncateMiddle(user.walletAddress)}</div>
               <button type="button" className="btn-secondary" onClick={onLogout}>
