@@ -29,8 +29,12 @@ async function uploadEncryptedFile(buffer, filename) {
     const result = await pinata.pinFileToIPFS(readable, options);
     return result.IpfsHash;
   } catch (err) {
-    const details = err?.response?.data?.error || err?.message || "IPFS upload failed";
-    throw new Error(`IPFS upload failed: ${details}`);
+    const apiError =
+      err?.response?.data?.error ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "IPFS upload failed";
+    throw new Error(`IPFS upload failed: ${apiError}`);
   }
 }
 
