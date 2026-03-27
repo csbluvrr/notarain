@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
@@ -35,55 +36,57 @@ export default function App() {
       <BrowserRouter>
         <div className="app-shell">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute role={["testator", "admin"]}>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/upload"
-              element={
-                <ProtectedRoute role={["testator", "admin"]}>
-                  <Upload />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notary"
-              element={
-                <ProtectedRoute role="notary">
-                  <NotaryDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/heir"
-              element={
-                <ProtectedRoute role="heir">
-                  <HeirDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/testament/:id"
-              element={
-                <ProtectedRoute role={["testator", "admin", "notary", "heir"]}>
-                  <DetailsTestament />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/demo" element={<DemoRoleSelect />} />
-            <Route path="/demo/upload" element={<DemoRoute><Upload /></DemoRoute>} />
-            <Route path="/demo/testator" element={<DemoRoute><Dashboard /></DemoRoute>} />
-            <Route path="/demo/notary" element={<DemoRoute><NotaryDashboard /></DemoRoute>} />
-            <Route path="/demo/heir" element={<DemoRoute><HeirDashboard /></DemoRoute>} />
-            <Route path="*" element={<Page404 />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute role={["testator", "admin"]}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/upload"
+                element={
+                  <ProtectedRoute role={["testator", "admin"]}>
+                    <Upload />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notary"
+                element={
+                  <ProtectedRoute role="notary">
+                    <NotaryDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/heir"
+                element={
+                  <ProtectedRoute role="heir">
+                    <HeirDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/testament/:id"
+                element={
+                  <ProtectedRoute role={["testator", "admin", "notary", "heir"]}>
+                    <DetailsTestament />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/demo" element={<DemoRoleSelect />} />
+              <Route path="/demo/upload" element={<DemoRoute><Upload /></DemoRoute>} />
+              <Route path="/demo/testator" element={<DemoRoute><Dashboard /></DemoRoute>} />
+              <Route path="/demo/notary" element={<DemoRoute><NotaryDashboard /></DemoRoute>} />
+              <Route path="/demo/heir" element={<DemoRoute><HeirDashboard /></DemoRoute>} />
+              <Route path="*" element={<Page404 />} />
+            </Routes>
+          </ErrorBoundary>
         </div>
       </BrowserRouter>
     </AuthProvider>
