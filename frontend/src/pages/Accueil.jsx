@@ -21,9 +21,6 @@ export default function Accueil() {
       <div className="max-w-6xl mx-auto">
         <div className="nr-card nr-card-hover nr-fade-in-up rounded-2xl bg-gradient-to-b from-gray-900 to-gray-950 p-8 md:p-12">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center px-3 py-1 mb-4 rounded-full border border-indigo-700/60 text-indigo-200 text-xs tracking-wide uppercase">
-              Démonstration universitaire
-            </div>
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">
               Notarain
             </h1>
@@ -93,30 +90,6 @@ export default function Accueil() {
             <p className="mt-3 text-gray-300 leading-relaxed">
               Un notaire valide ou rejette le testament. Après confirmation du décès, l’exécution est tracée.
             </p>
-          </div>
-        </div>
-
-        <div className="mt-10 nr-card nr-card-hover p-6 md:p-7">
-          <h3 className="text-lg md:text-xl font-bold">Parcours de démonstration recommandé</h3>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div className="rounded-lg border border-indigo-800/70 bg-indigo-950/30 p-4">
-              <div className="text-indigo-200 font-semibold mb-1">1) Testateur</div>
-              <p className="text-gray-300">
-                Créer un testament, chiffrer le PDF, envoyer sur IPFS, soumettre au notaire.
-              </p>
-            </div>
-            <div className="rounded-lg border border-purple-800/70 bg-purple-950/30 p-4">
-              <div className="text-purple-200 font-semibold mb-1">2) Notaire</div>
-              <p className="text-gray-300">
-                Ouvrir l’espace notaire, approuver/rejeter, puis confirmer le décès pour exécution.
-              </p>
-            </div>
-            <div className="rounded-lg border border-emerald-800/70 bg-emerald-950/30 p-4">
-              <div className="text-emerald-200 font-semibold mb-1">3) Bénéficiaire</div>
-              <p className="text-gray-300">
-                Rechercher le testament exécuté, saisir le mot de passe, déchiffrer et consulter le PDF.
-              </p>
-            </div>
           </div>
         </div>
       </div>
