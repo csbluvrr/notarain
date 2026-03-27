@@ -106,9 +106,9 @@ export default function DemoRoleSelect() {
       }}
     >
       <section style={{ width: "100%", maxWidth: 900, padding: "32px 24px" }}>
-        <h1 style={{ fontSize: 42, textAlign: "center", marginBottom: 10, fontFamily: "'Cormorant Garamond', serif" }}>Select a Role</h1>
+        <h1 style={{ fontSize: 42, textAlign: "center", marginBottom: 10, fontFamily: "'Cormorant Garamond', serif" }}>Choisir un rôle</h1>
         <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 15, marginBottom: 48, maxWidth: 620, marginInline: "auto" }}>
-          Experience Notarain from each participant&apos;s perspective
+          Découvrez Notarain du point de vue de chaque participant
         </p>
 
         <div
@@ -122,37 +122,37 @@ export default function DemoRoleSelect() {
           <DemoRoleCard
             roleKey="testator"
             icon={<IconScrollDoc />}
-            title="Testator"
+            title="Testateur"
             name={demoUsers.testator.name}
             wallet="0x4959...8b51"
-            description="Upload encrypted testaments, designate heirs, and register your will immutably on the blockchain."
-            buttonLabel="Enter as Testator"
+            description="Déposez des testaments chiffrés, désignez des bénéficiaires et enregistrez votre volonté de manière immuable sur la blockchain."
+            buttonLabel="Entrer en tant que testateur"
             onEnter={() => onEnter("testator", "/demo/testator")}
           />
           <DemoRoleCard
             roleKey="notary"
             icon={<IconStamp />}
-            title="Notary"
+            title="Notaire"
             name={demoUsers.notary.name}
             wallet="0x7f3a...2c19"
-            description="Review submitted testaments, validate authenticity, approve or reject documents, and confirm execution."
-            buttonLabel="Enter as Notary"
+            description="Examinez les testaments soumis, validez l’authenticité, approuvez ou rejetez les documents et confirmez l’exécution."
+            buttonLabel="Entrer en tant que notaire"
             onEnter={() => onEnter("notary", "/demo/notary")}
           />
           <DemoRoleCard
             roleKey="heir"
             icon={<IconKey />}
-            title="Heir"
+            title="Héritier"
             name={demoUsers.heir.name}
             wallet="0x2b8e...a047"
-            description="View your designated inheritances and access decrypted documents once the testament has been executed."
-            buttonLabel="Enter as Heir"
+            description="Consultez vos héritages et accédez aux documents déchiffrés une fois le testament exécuté."
+            buttonLabel="Entrer en tant qu’héritier"
             onEnter={() => onEnter("heir", "/demo/heir")}
           />
         </div>
 
         <button type="button" className="btn-secondary" onClick={goBack} style={{ marginTop: 24, width: "fit-content" }}>
-          ← Back to Home
+          ← Retour à l’accueil
         </button>
       </section>
     </main>

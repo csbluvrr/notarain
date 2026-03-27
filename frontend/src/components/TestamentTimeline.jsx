@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 function formatDateTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString("fr-FR", {
     month: "long",
     day: "numeric",
     year: "numeric",

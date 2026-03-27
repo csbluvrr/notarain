@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 function formatDate(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return d.toLocaleString("fr-FR", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 export default function NotificationDropdown({
@@ -55,7 +55,7 @@ export default function NotificationDropdown({
 
       <div style={{ maxHeight: 400, overflowY: "auto" }}>
         {notifications.length === 0 ? (
-          <div style={{ padding: 18, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>No notifications</div>
+          <div style={{ padding: 18, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>Aucune notification</div>
         ) : (
           notifications.map((n) => {
             const unread = !n.read;
@@ -90,7 +90,7 @@ export default function NotificationDropdown({
 
       <div style={{ padding: 12, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end" }}>
         <button type="button" className="btn-secondary" style={{ padding: "6px 10px", fontSize: 12 }} onClick={onMarkAllRead}>
-          Mark all as read
+          Tout marquer comme lu
         </button>
       </div>
     </div>

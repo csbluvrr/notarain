@@ -11,9 +11,9 @@ export default function Landing() {
   const onConnect = async () => {
     try {
       await connectWallet();
-      toast.success("Wallet connected");
+      toast.success("Portefeuille connecté");
     } catch (err) {
-      toast.error(err?.message || "Wallet connection failed");
+      toast.error(err?.message || "Échec de connexion au portefeuille");
     }
   };
 
@@ -50,7 +50,7 @@ export default function Landing() {
 
       <h1 style={{ fontSize: 80, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>Notarain</h1>
       <div style={{ fontSize: 16, color: "var(--text-muted)", letterSpacing: 3, textTransform: "uppercase", marginTop: 8 }}>
-        Decentralized Notarial Succession
+        Succession notariale décentralisée
       </div>
       <div style={{ width: 80, margin: "28px auto", borderBottom: "1px solid var(--border)" }} />
 
@@ -63,7 +63,7 @@ export default function Landing() {
           lineHeight: 1.7
         }}
       >
-        Secure your legacy on the blockchain. Encrypted, immutable, and validated by certified notaries.
+        Protégez votre héritage sur la blockchain. Chiffré, immuable et validé par des notaires certifiés.
       </p>
 
       {!user ? (
@@ -73,28 +73,28 @@ export default function Landing() {
           style={{ padding: "14px 40px", fontSize: 15, marginTop: 32 }}
           onClick={onConnect}
         >
-          Connect Wallet
+          Connecter le portefeuille
         </button>
       ) : (
         <div style={{ marginTop: 32, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
           {isTestator ? (
             <>
               <Link to="/dashboard" className="btn-secondary">
-                My Testaments
+                Mes testaments
               </Link>
               <Link to="/upload" className="btn-secondary">
-                Upload Testament
+                Déposer un testament
               </Link>
             </>
           ) : null}
           {isNotary ? (
             <Link to="/notary" className="btn-secondary">
-              Review Panel
+              Espace notaire
             </Link>
           ) : null}
           {isHeir ? (
             <Link to="/heir" className="btn-secondary">
-              My Inheritances
+              Mes héritages
             </Link>
           ) : null}
         </div>
@@ -103,7 +103,7 @@ export default function Landing() {
       <div style={{ marginTop: 24, marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 16 }}>
           <div style={{ height: 1, background: "var(--border)", flex: 1, maxWidth: 160 }} />
-          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>or</div>
+          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>ou</div>
           <div style={{ height: 1, background: "var(--border)", flex: 1, maxWidth: 160 }} />
         </div>
         <button
@@ -128,15 +128,15 @@ export default function Landing() {
             e.currentTarget.style.color = "var(--text-secondary)";
           }}
         >
-          ▶&nbsp; Try Demo
+          ▶&nbsp; Essayer la démo
         </button>
         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, textAlign: "center" }}>
-          No wallet required · Simulated data
+          Aucun portefeuille requis · Données simulées
         </div>
       </div>
 
       <div style={{ marginTop: 16, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
-        {["AES-256 Encrypted", "Blockchain Verified", "Notary Validated"].map((feature) => (
+        {["Chiffrement AES-256", "Vérifié sur blockchain", "Validé par notaire"].map((feature) => (
           <span
             key={feature}
             style={{

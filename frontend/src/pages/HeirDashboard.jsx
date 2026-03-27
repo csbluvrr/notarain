@@ -16,7 +16,7 @@ function truncateAddress(address = "") {
 function formatDate(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("fr-FR", { month: "long", day: "numeric", year: "numeric" });
 }
 
 function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument }) {
@@ -35,7 +35,7 @@ function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument 
 
   const download = async () => {
     if (!password) {
-      setError("Password is required.");
+      setError("Mot de passe requis.");
       return;
     }
 
@@ -44,15 +44,15 @@ function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument 
       setError("");
       if (isDemoMode) {
         await demoDecryptDocument(item, password);
-        toast.success("Document downloaded");
+        toast.success("Document téléchargé");
         onClose?.();
       } else {
         const res = await fetch(`${PINATA_GATEWAY}/${item.ipfsCid}`);
-        if (!res.ok) throw new Error("Unable to fetch encrypted file");
+        if (!res.ok) throw new Error("Impossible de récupérer le fichier chiffré");
         const encryptedArrayBuffer = await res.arrayBuffer();
         const bytes = new Uint8Array(encryptedArrayBuffer);
 
-        if (bytes.length < 32) throw new Error("Invalid encrypted payload");
+        if (bytes.length < 32) throw new Error("Payload chiffré invalide");
         const iv = bytes.slice(0, 16);
         const authTag = bytes.slice(16, 32);
         const cipher = bytes.slice(32);
@@ -85,12 +85,12 @@ function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument 
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
-        toast.success("Document downloaded");
+        toast.success("Document téléchargé");
         onClose?.();
       }
     } catch (err) {
-      setError("Incorrect password. Please verify with the testator.");
-      toast.error(err?.message || "Decryption failed");
+      setError("Mot de passe incorrect. Veuillez vérifier avec le testateur.");
+      toast.error(err?.message || "Échec du déchiffrement");
     } finally {
       setLoading(false);
     }
@@ -112,9 +112,9 @@ function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument 
           transform: "translate(-50%, -50%)"
         }}
       >
-        <h3 style={{ fontSize: 28 }}>Decrypt & Download</h3>
+        <h3 style={{ fontSize: 28 }}>Déchiffrer & télécharger</h3>
         <p style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 14 }}>
-          Enter the encryption password provided by the testator to decrypt and download this document.
+          Entrez le mot de passe de chiffrement fourni par le testateur pour déchiffrer et télécharger ce document.
         </p>
         <div style={{ marginTop: 14 }}>
           <input
@@ -131,15 +131,15 @@ function TriggerDownload({ open, item, onClose, isDemoMode, demoDecryptDocument 
         </div>
         <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button className="btn-secondary" onClick={onClose}>
-            Cancel
+            Annuler
           </button>
           <button className="btn-primary" onClick={download} disabled={loading}>
             {loading ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <span className="spinner" /> Downloading...
+                <span className="spinner" /> Téléchargement...
               </span>
             ) : (
-              "Download Document"
+              "Télécharger le document"
             )}
           </button>
         </div>
@@ -177,7 +177,7 @@ function IntegrityModal({ open, item, onClose, onVerify }) {
       const res = await onVerify?.(item, f);
       setResult(res || null);
     } catch (err) {
-      toast.error(err?.message || "Verification failed");
+      toast.error(err?.message || "Échec de la vérification");
     } finally {
       setChecking(false);
     }
@@ -196,13 +196,13 @@ function IntegrityModal({ open, item, onClose, onVerify }) {
           transform: "translate(-50%, -50%)"
         }}
       >
-        <h3 style={{ fontSize: 26 }}>Blockchain Integrity Verification</h3>
+        <h3 style={{ fontSize: 26 }}>Vérification d’intégrité (blockchain)</h3>
         <p style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 14 }}>
-          Upload a document to verify its hash against the on-chain record.
+          Importez un document pour comparer son hash avec l’enregistrement on-chain.
         </p>
 
         <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>On-chain hash</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>Hash on-chain</div>
           <code
             style={{
               display: "block",
@@ -222,7 +222,7 @@ function IntegrityModal({ open, item, onClose, onVerify }) {
 
         <div style={{ marginTop: 14 }}>
           <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>
-            Upload document to verify
+            Importer un document à vérifier
           </label>
           <input
             type="file"
@@ -237,7 +237,7 @@ function IntegrityModal({ open, item, onClose, onVerify }) {
 
         {checking ? (
           <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 13 }}>
-            <span className="spinner" /> Verifying...
+            <span className="spinner" /> Vérification...
           </div>
         ) : null}
 
@@ -259,28 +259,28 @@ function IntegrityModal({ open, item, onClose, onVerify }) {
               >
                 ✓
               </div>
-              <div style={{ color: "var(--success)", fontSize: 14 }}>Document integrity verified</div>
+              <div style={{ color: "var(--success)", fontSize: 14 }}>Intégrité du document vérifiée</div>
             </div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 6, color: "var(--text-secondary)", fontSize: 13 }}>
               <div>
-                On-chain hash: <span style={{ fontFamily: "monospace", color: "var(--accent)" }}>{result.onChainHash}</span>
+                Hash on-chain : <span style={{ fontFamily: "monospace", color: "var(--accent)" }}>{result.onChainHash}</span>
               </div>
               <div>
-                Computed hash: <span style={{ fontFamily: "monospace", color: "var(--accent)" }}>{result.computedHash}</span>
+                Hash calculé : <span style={{ fontFamily: "monospace", color: "var(--accent)" }}>{result.computedHash}</span>
               </div>
-              <div style={{ color: "var(--success)" }}>Match: ✓ Identical</div>
+              <div style={{ color: "var(--success)" }}>Correspondance : ✓ Identique</div>
             </div>
 
             <div style={{ marginTop: 12, color: "var(--text-muted)", fontSize: 12 }}>
-              This confirms the document has not been modified since it was registered on the blockchain.
+              Cela confirme que le document n’a pas été modifié depuis son enregistrement sur la blockchain.
             </div>
           </div>
         ) : null}
 
         <div style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
           <button className="btn-secondary" onClick={onClose}>
-            Close
+            Fermer
           </button>
         </div>
       </div>
@@ -321,25 +321,25 @@ export default function HeirDashboard() {
 
   return (
     <section className="page-container">
-      <h1 className="page-title">My Inheritances</h1>
-      <p className="page-subtitle">Testaments where you are a designated beneficiary</p>
+      <h1 className="page-title">Mes héritages</h1>
+      <p className="page-subtitle">Testaments où vous êtes désigné comme bénéficiaire</p>
 
       <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ color: "var(--accent)", fontSize: 18 }}>🔒</span>
         <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-          Documents are only accessible after the notary has confirmed the testator&apos;s passing and the testament is marked as Executed.
+          Les documents sont accessibles uniquement après confirmation du décès par le notaire et exécution du testament.
         </span>
       </div>
 
       <div style={{ marginBottom: 10, color: "var(--text-muted)", fontSize: 13 }}>
-        Accessible now: <span style={{ color: "var(--accent)" }}>{executedCount}</span>
+        Accessible maintenant : <span style={{ color: "var(--accent)" }}>{executedCount}</span>
       </div>
 
       {loading ? (
-        <div className="card">Loading...</div>
+        <div className="card">Chargement...</div>
       ) : items.length === 0 ? (
         <div className="card" style={{ color: "var(--text-secondary)" }}>
-          No inheritances found for your wallet.
+          Aucun héritage trouvé pour votre portefeuille.
         </div>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
@@ -348,7 +348,7 @@ export default function HeirDashboard() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <div>
                   <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                    Testator: {truncateAddress(t.testatorWallet)}
+                    Testateur : {truncateAddress(t.testatorWallet)}
                   </div>
                   <div style={{ marginTop: 4 }}>{t.originalFileName}</div>
                   <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
@@ -361,22 +361,22 @@ export default function HeirDashboard() {
               <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
                   {(t.heirs || []).find((h) => h.walletAddress === String((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "").toLowerCase())?.share ||
-                    "Heir share available in testament record"}
+                    "Part disponible dans le testament"}
                 </div>
                 {t.status === "executed" ? (
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     {isDemoMode ? (
                       <button className="btn-secondary" style={{ padding: "10px 14px" }} onClick={() => setVerifyItem(t)}>
-                        Verify Integrity
+                        Vérifier l’intégrité
                       </button>
                     ) : null}
                     <button className="btn-primary" onClick={() => setModalItem(t)}>
-                      Access Document
+                      Accéder au document
                     </button>
                   </div>
                 ) : (
                   <div style={{ color: "var(--text-muted)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <span>🔒</span> Awaiting execution
+                    <span>🔒</span> En attente d’exécution
                   </div>
                 )}
               </div>

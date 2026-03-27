@@ -6,7 +6,7 @@ const { abi, address } = contractJson;
 
 export async function getContract() {
   if (!window.ethereum) {
-    throw new Error("MetaMask not found");
+    throw new Error("MetaMask introuvable");
   }
 
   const provider = new BrowserProvider(window.ethereum);

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo } from "react";
 function formatMemberSince(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("fr-FR", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export default function ProfileDropdown({
@@ -78,13 +78,13 @@ export default function ProfileDropdown({
           {initial}
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>{user?.name || "Profile"}</div>
-          <div style={{ marginTop: 2, fontSize: 12, color: "var(--text-muted)" }}>Member since {formatMemberSince(user?.createdAt)}</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>{user?.name || "Profil"}</div>
+          <div style={{ marginTop: 2, fontSize: 12, color: "var(--text-muted)" }}>Membre depuis {formatMemberSince(user?.createdAt)}</div>
         </div>
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>Wallet</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>Adresse du portefeuille</div>
         <div
           style={{
             display: "flex",
@@ -100,14 +100,14 @@ export default function ProfileDropdown({
             {user?.walletAddress || "-"}
           </div>
           <button type="button" className="btn-secondary" style={{ marginLeft: "auto", padding: "6px 10px", fontSize: 12 }} onClick={copyWallet}>
-            Copy
+            Copier
           </button>
         </div>
       </div>
 
       {stats ? (
         <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>Stats</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>Statistiques</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {Object.entries(stats).map(([k, v]) => (
               <div key={k} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 10px" }}>

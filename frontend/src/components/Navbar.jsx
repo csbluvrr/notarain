@@ -17,10 +17,10 @@ function truncateMiddle(text, left = 6, right = 4) {
 
 function roleLabel(role) {
   const normalized = String(role || "").toLowerCase();
-  if (normalized === "testator" || normalized === "admin") return "Testator";
-  if (normalized === "notary") return "Notary";
-  if (normalized === "heir") return "Heir";
-  return "Unknown";
+  if (normalized === "testator" || normalized === "admin") return "Testateur";
+  if (normalized === "notary") return "Notaire";
+  if (normalized === "heir") return "Héritier";
+  return "Inconnu";
 }
 
 export default function Navbar() {
@@ -54,10 +54,10 @@ export default function Navbar() {
   const onLogout = async () => {
     try {
       await logout();
-      toast.success("Disconnected");
+      toast.success("Déconnecté");
       navigate("/");
     } catch {
-      toast.error("Logout failed");
+      toast.error("Échec de la déconnexion");
     }
   };
 
@@ -240,7 +240,7 @@ export default function Navbar() {
                     setProfileOpen((v) => !v);
                   }}
                 >
-                  Profile
+                  Profil
                 </button>
                 <ProfileDropdown
                   open={profileOpen}
@@ -261,7 +261,7 @@ export default function Navbar() {
                   navigate("/");
                 }}
               >
-                Exit Demo
+                Quitter la démo
               </button>
             </>
           ) : user ? (
@@ -286,7 +286,7 @@ export default function Navbar() {
                   style={{ padding: "8px 10px" }}
                   onClick={() => setProfileOpen((v) => !v)}
                 >
-                  Profile
+                  Profil
                 </button>
                 <ProfileDropdown
                   open={profileOpen}
@@ -297,7 +297,7 @@ export default function Navbar() {
                 />
               </div>
               <button type="button" className="btn-secondary" onClick={onLogout}>
-                Logout
+                Déconnexion
               </button>
             </>
           ) : (
@@ -331,14 +331,14 @@ export default function Navbar() {
                   navigate("/");
                 }}
               >
-                Exit Demo
+                Quitter la démo
               </button>
             </>
           ) : user ? (
             <>
               <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{truncateMiddle(user.walletAddress)}</div>
               <button type="button" className="btn-secondary" onClick={onLogout}>
-                Logout
+                Déconnexion
               </button>
             </>
           ) : (

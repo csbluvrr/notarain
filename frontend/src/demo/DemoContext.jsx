@@ -12,13 +12,13 @@ const DemoContext = createContext(null);
 const initialNotifications = [
   {
     id: 1,
-    message: 'Your testament "testament_biens_immobiliers_2026.pdf" has been approved by the notary',
+    message: 'Votre testament "testament_biens_immobiliers_2026.pdf" a été validé par le notaire',
     date: "2026-03-01T11:00:00Z",
     read: true
   },
   {
     id: 2,
-    message: 'Your testament "testament_principal_mouna_2026.pdf" has been executed. Heirs have been notified.',
+    message: 'Votre testament "testament_principal_mouna_2026.pdf" a été exécuté. Les héritiers ont été notifiés.',
     date: "2026-03-20T14:45:00Z",
     read: false
   }
@@ -128,9 +128,9 @@ export function DemoProvider({ children }) {
 
   const demoUploadTestament = (file, password, onProgress) => {
     return new Promise((resolve, reject) => {
-      if (!file) return reject(new Error("Missing file."));
+      if (!file) return reject(new Error("Fichier manquant."));
       const pass = String(password || "");
-      if (!pass) return reject(new Error("Password is required."));
+      if (!pass) return reject(new Error("Mot de passe requis."));
 
       const id = "demo-new-" + Date.now();
       const ipfsCid = "QmDemo" + Math.random().toString(36).substr(2, 40);
@@ -165,10 +165,10 @@ export function DemoProvider({ children }) {
           timeline: [
             {
               status: "draft",
-              label: "Testament Created",
+              label: "Testament créé",
               date: createdAt,
               actor,
-              note: "Document uploaded and encrypted"
+              note: "Document envoyé et chiffré"
             }
           ]
         };
@@ -186,7 +186,7 @@ export function DemoProvider({ children }) {
 
   const demoSubmitTestament = (id) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const actor = demoUserRef.current?.displayWallet || demoUsers.testator.displayWallet;
         const date = nowIso();
@@ -200,7 +200,7 @@ export function DemoProvider({ children }) {
             updatedAt: date,
             timeline: [
               ...safeTimeline(t),
-              { status: "pending", label: "Submitted for Review", date, actor, note: "Sent to notary queue" }
+              { status: "pending", label: "Soumis au notaire", date, actor, note: "Envoyé dans la file d’attente du notaire" }
             ]
           };
           return updated;
@@ -211,7 +211,7 @@ export function DemoProvider({ children }) {
         setAllNotaryTestaments([updated, ...(allNotaryRef.current || []).filter((x) => x._id !== id)]);
         setHeirTestaments(attachHeirData(next));
 
-        pushNotification("Your testament has been submitted for notary review");
+        pushNotification("Votre testament a été soumis pour revue notariale");
         resolve(updated);
       }, 800);
     });
@@ -219,7 +219,7 @@ export function DemoProvider({ children }) {
 
   const demoRegisterOnChain = (id, ipfsCid, documentHash) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const actor = demoUserRef.current?.displayWallet || demoUsers.testator.displayWallet;
         const date = nowIso();
@@ -240,10 +240,10 @@ export function DemoProvider({ children }) {
               ...safeTimeline(t),
               {
                 status: "approved",
-                label: "Registered on Blockchain",
+                label: "Enregistré sur la blockchain",
                 date,
                 actor,
-                note: "Transaction confirmed on Sepolia"
+                note: "Transaction confirmée sur Sepolia"
               }
             ]
           };
@@ -262,11 +262,11 @@ export function DemoProvider({ children }) {
 
   const demoDeleteTestament = (id) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const t = (testamentsRef.current || []).find((x) => x._id === id);
-        if (!t) return reject(new Error("Not found."));
-        if (t.status !== "draft") return reject(new Error("Only drafts can be deleted."));
+        if (!t) return reject(new Error("Introuvable."));
+        if (t.status !== "draft") return reject(new Error("Seuls les brouillons peuvent être supprimés."));
         const next = (testamentsRef.current || []).filter((x) => x._id !== id);
         setTestaments(next);
         setPendingTestaments(next.filter((x) => x.status === "pending"));
@@ -279,7 +279,7 @@ export function DemoProvider({ children }) {
 
   const demoSaveHeirs = (id, heirs) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const actor = demoUserRef.current?.displayWallet || demoUsers.testator.displayWallet;
         const date = nowIso();
@@ -296,10 +296,10 @@ export function DemoProvider({ children }) {
               ...safeTimeline(t),
               {
                 status: t.status,
-                label: "Beneficiaries Updated",
+                label: "Bénéficiaires mis à jour",
                 date,
                 actor,
-                note: `${list.length} beneficiary(ies) designated`
+                note: `${list.length} bénéficiaire(s) désigné(s)`
               }
             ]
           };
@@ -318,7 +318,7 @@ export function DemoProvider({ children }) {
 
   const demoRevokeTestament = (id) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const actor = demoUserRef.current?.displayWallet || demoUsers.testator.displayWallet;
         const date = nowIso();
@@ -334,10 +334,10 @@ export function DemoProvider({ children }) {
               ...safeTimeline(t),
               {
                 status: "revoked",
-                label: "Testament Revoked",
+                label: "Testament révoqué",
                 date,
                 actor,
-                note: "Testator initiated revocation"
+                note: "Révocation initiée par le testateur"
               }
             ]
           };
@@ -357,7 +357,7 @@ export function DemoProvider({ children }) {
 
   const demoApproveTestament = (id) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const actor = demoUsers.notary.displayWallet;
         const date = nowIso();
@@ -372,7 +372,7 @@ export function DemoProvider({ children }) {
             updatedAt: date,
             timeline: [
               ...safeTimeline(t),
-              { status: "approved", label: "Approved by Notary", date, actor, note: "Document verified and validated" }
+              { status: "approved", label: "Validé par le notaire", date, actor, note: "Document vérifié et validé" }
             ]
           };
           return updated;
@@ -383,7 +383,7 @@ export function DemoProvider({ children }) {
         setAllNotaryTestaments((allNotaryRef.current || []).map((x) => (x._id === id ? updated : x)));
         setHeirTestaments(attachHeirData(next));
 
-        pushNotification(`Your testament "${updated?.originalFileName}" has been approved by the notary`);
+        pushNotification(`Votre testament "${updated?.originalFileName}" a été validé par le notaire`);
         resolve(updated);
       }, 2000);
     });
@@ -391,9 +391,9 @@ export function DemoProvider({ children }) {
 
   const demoRejectTestament = (id, reason) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       const r = String(reason || "");
-      if (r.trim().length < 10) return reject(new Error("Rejection reason must be at least 10 characters."));
+      if (r.trim().length < 10) return reject(new Error("Le motif de rejet doit contenir au moins 10 caractères."));
 
       setTimeout(() => {
         const actor = demoUsers.notary.displayWallet;
@@ -410,7 +410,7 @@ export function DemoProvider({ children }) {
             updatedAt: date,
             timeline: [
               ...safeTimeline(t),
-              { status: "rejected", label: "Rejected by Notary", date, actor, note: r.trim() }
+              { status: "rejected", label: "Rejeté par le notaire", date, actor, note: r.trim() }
             ]
           };
           return updated;
@@ -421,7 +421,7 @@ export function DemoProvider({ children }) {
         setAllNotaryTestaments((allNotaryRef.current || []).map((x) => (x._id === id ? updated : x)));
         setHeirTestaments(attachHeirData(next));
 
-        pushNotification(`Your testament "${updated?.originalFileName}" was rejected: ${r.trim()}`);
+        pushNotification(`Votre testament "${updated?.originalFileName}" a été rejeté : ${r.trim()}`);
         resolve(updated);
       }, 1000);
     });
@@ -429,7 +429,7 @@ export function DemoProvider({ children }) {
 
   const demoExecuteTestament = (id) => {
     return new Promise((resolve, reject) => {
-      if (!id) return reject(new Error("Missing testament id."));
+      if (!id) return reject(new Error("Identifiant du testament manquant."));
       setTimeout(() => {
         const actor = demoUsers.notary.displayWallet;
         const date = nowIso();
@@ -446,10 +446,10 @@ export function DemoProvider({ children }) {
               ...safeTimeline(t),
               {
                 status: "executed",
-                label: "Executed by Notary",
+                label: "Exécuté par le notaire",
                 date,
                 actor,
-                note: "Death confirmed — heirs granted access"
+                note: "Décès confirmé — accès accordé aux héritiers"
               }
             ]
           };
@@ -461,7 +461,7 @@ export function DemoProvider({ children }) {
         setAllNotaryTestaments((allNotaryRef.current || []).map((x) => (x._id === id ? updated : x)));
         setHeirTestaments(attachHeirData(next));
 
-        pushNotification(`Testament "${updated?.originalFileName}" has been executed. Heirs have been notified.`);
+        pushNotification(`Le testament "${updated?.originalFileName}" a été exécuté. Les héritiers ont été notifiés.`);
         resolve(updated);
       }, 2000);
     });
@@ -472,10 +472,10 @@ export function DemoProvider({ children }) {
   const demoDecryptDocument = (testament, password) => {
     return new Promise((resolve, reject) => {
       const pass = String(password || "");
-      if (!pass) return reject(new Error("Password is required."));
+      if (!pass) return reject(new Error("Mot de passe requis."));
 
       setTimeout(() => {
-        const formattedDate = new Date(testament?.updatedAt || testament?.createdAt || nowIso()).toLocaleString("en-US", {
+        const formattedDate = new Date(testament?.updatedAt || testament?.createdAt || nowIso()).toLocaleString("fr-FR", {
           month: "long",
           day: "numeric",
           year: "numeric",
@@ -488,45 +488,45 @@ export function DemoProvider({ children }) {
           .join("\n");
 
         const content = `╔══════════════════════════════════════════════════╗
- ║           NOTARAIN — VERIFIED TESTAMENT           ║
+ ║           NOTARAIN — TESTAMENT VÉRIFIÉ            ║
  ╚══════════════════════════════════════════════════╝
 
- DOCUMENT INFORMATION
+ INFORMATIONS DU DOCUMENT
  ─────────────────────────────────────────────────────
- File Name     : ${testament.originalFileName}
- Testator      : ${testament.testatorWallet}
- Notary        : ${testament.notaryWallet}
- Blockchain ID : #${testament.blockchainId}
- IPFS CID      : ${testament.ipfsCid}
- Hash (SHA-256): ${testament.documentHash}
- Executed On   : ${formattedDate}
+ Nom du fichier : ${testament.originalFileName}
+ Testateur      : ${testament.testatorWallet}
+ Notaire        : ${testament.notaryWallet}
+ ID Blockchain  : #${testament.blockchainId}
+ IPFS CID       : ${testament.ipfsCid}
+ Hash (SHA-256) : ${testament.documentHash}
+ Exécuté le     : ${formattedDate}
 
- VERIFICATION
+ VÉRIFICATION
  ─────────────────────────────────────────────────────
- ✓ Document integrity verified on-chain
- ✓ Notary signature confirmed
- ✓ Decryption successful — AES-256-GCM
+ ✓ Intégrité du document vérifiée on-chain
+ ✓ Signature du notaire confirmée
+ ✓ Déchiffrement réussi — AES-256-GCM
 
- BENEFICIARIES
+ BÉNÉFICIAIRES
  ─────────────────────────────────────────────────────
 ${heirsList}
 
- TESTAMENT CONTENT
+ CONTENU DU TESTAMENT
  ─────────────────────────────────────────────────────
- I, Mouna Jaimi, being of sound mind and body, hereby
- declare this to be my Last Will and Testament.
+ Je, Mouna Jaimi, étant saine d’esprit et de corps, déclare
+ ceci comme mon dernier testament.
 
- I revoke all previous wills and codicils.
+ Je révoque tous les testaments et codicilles antérieurs.
 
- I designate the beneficiaries listed above to receive
- the assets corresponding to their designated shares.
+ Je désigne les bénéficiaires listés ci-dessus pour recevoir
+ les biens correspondant à leurs parts désignées.
 
- This document has been cryptographically sealed and
- recorded immutably on the Ethereum Sepolia blockchain.
+ Ce document a été scellé cryptographiquement et enregistré
+ de manière immuable sur la blockchain Ethereum Sepolia.
 
  ─────────────────────────────────────────────────────
- Notarain | Decentralized Notarial Platform
- EMSI Marrakech — Blockchain Project 2025/2026
+ Notarain | Plateforme notariale décentralisée
+ EMSI Marrakech — Projet Blockchain 2025/2026
  ─────────────────────────────────────────────────────`;
 
         const blob = new Blob([content], { type: "text/plain" });

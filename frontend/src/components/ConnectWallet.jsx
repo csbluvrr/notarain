@@ -9,9 +9,9 @@ export default function ConnectWallet({ className = "" }) {
   const onConnect = async () => {
     try {
       await connectWallet();
-      toast.success("Wallet connected");
+      toast.success("Portefeuille connecté");
     } catch (err) {
-      toast.error(err?.message || "Wallet connection failed");
+      toast.error(err?.message || "Échec de connexion au portefeuille");
       throw err;
     }
   };
@@ -22,7 +22,7 @@ export default function ConnectWallet({ className = "" }) {
       onClick={onConnect}
       className={`btn-primary ${className}`}
     >
-      Connect Wallet
+      Connecter le portefeuille
     </button>
   );
 }

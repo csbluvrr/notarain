@@ -33,7 +33,7 @@ export default function ManageHeirsModal({ open, testament, onClose, onSaved }) 
     return () => window.removeEventListener("keydown", onEsc);
   }, [open, onClose]);
 
-  const subtitle = useMemo(() => testament?.originalFileName || "Untitled Testament", [testament]);
+  const subtitle = useMemo(() => testament?.originalFileName || "Testament sans titre", [testament]);
 
   if (!open) return null;
 
@@ -43,7 +43,7 @@ export default function ManageHeirsModal({ open, testament, onClose, onSaved }) 
 
   const addHeir = () => {
     if (!name.trim() || !walletAddress.trim() || !share.trim()) {
-      toast.error("Please fill all beneficiary fields");
+      toast.error("Veuillez remplir tous les champs du bénéficiaire");
       return;
     }
     setHeirs((prev) => [
@@ -68,11 +68,11 @@ export default function ManageHeirsModal({ open, testament, onClose, onSaved }) 
       } else {
         await api.post(`/api/testament/heirs/${testament._id}`, { heirs });
       }
-      toast.success("Beneficiaries updated");
+      toast.success("Bénéficiaires mis à jour");
       onSaved?.();
       onClose?.();
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Failed to save beneficiaries");
+      toast.error(err?.response?.data?.error || err?.message || "Impossible d’enregistrer les bénéficiaires");
     } finally {
       setSaving(false);
     }
@@ -99,12 +99,12 @@ export default function ManageHeirsModal({ open, testament, onClose, onSaved }) 
           transform: "translate(-50%, -50%)"
         }}
       >
-        <h3 style={{ fontSize: 30 }}>Manage Beneficiaries</h3>
+        <h3 style={{ fontSize: 30 }}>Gérer les bénéficiaires</h3>
         <p style={{ marginTop: 8, color: "var(--text-secondary)" }}>{subtitle}</p>
 
         <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
           {heirs.length === 0 ? (
-            <div style={{ color: "var(--text-muted)", fontSize: 14 }}>No beneficiaries yet.</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Aucun bénéficiaire pour le moment.</div>
           ) : (
             heirs.map((h, idx) => (
               <div
@@ -139,28 +139,28 @@ export default function ManageHeirsModal({ open, testament, onClose, onSaved }) 
         </div>
 
         <div style={{ marginTop: 22 }}>
-          <div style={{ marginBottom: 10, color: "var(--text-secondary)", fontSize: 14 }}>Add Beneficiary</div>
+          <div style={{ marginBottom: 10, color: "var(--text-secondary)", fontSize: 14 }}>Ajouter un bénéficiaire</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px auto", gap: 8 }}>
-            <input className="input" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="input" placeholder="Nom complet" value={name} onChange={(e) => setName(e.target.value)} />
             <input
               className="input"
-              placeholder="Wallet Address"
+              placeholder="Adresse du portefeuille"
               value={walletAddress}
               onChange={(e) => setWalletAddress(e.target.value)}
             />
-            <input className="input" placeholder="Share (e.g. 50%)" value={share} onChange={(e) => setShare(e.target.value)} />
+            <input className="input" placeholder="Part (ex. 50%)" value={share} onChange={(e) => setShare(e.target.value)} />
             <button type="button" className="btn-secondary" onClick={addHeir}>
-              Add
+              Ajouter
             </button>
           </div>
         </div>
 
         <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            Cancel
+            Annuler
           </button>
           <button type="button" className="btn-primary" onClick={save} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Enregistrement..." : "Enregistrer"}
           </button>
         </div>
       </div>

@@ -5,7 +5,7 @@ function formatDate(value) {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("fr-FR", { month: "long", day: "numeric", year: "numeric" });
 }
 
 function truncateMiddle(text, left = 10, right = 4) {
@@ -39,7 +39,7 @@ export default function TestamentCard({ testament, actions = null, isDemo = fals
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 justify-between">
-            <div className="font-medium text-base truncate">{originalFileName || "Untitled Testament"}</div>
+            <div className="font-medium text-base truncate">{originalFileName || "Testament sans titre"}</div>
             <StatusBadge status={status} />
           </div>
 
@@ -49,7 +49,7 @@ export default function TestamentCard({ testament, actions = null, isDemo = fals
 
           {hasBlockchainId ? (
             <div className="mt-2 text-xs" style={{ color: "var(--success)", display: "flex", gap: 8, alignItems: "center" }}>
-              <span>Chain ID: {blockchainId}</span>
+              <span>ID Blockchain : {blockchainId}</span>
               {isDemo ? (
                 <span
                   style={{
@@ -60,7 +60,7 @@ export default function TestamentCard({ testament, actions = null, isDemo = fals
                     fontSize: 10
                   }}
                 >
-                  SIMULATED
+                  SIMULÉ
                 </span>
               ) : null}
             </div>
@@ -86,7 +86,7 @@ export default function TestamentCard({ testament, actions = null, isDemo = fals
             fontSize: 13
           }}
         >
-          Rejected: <span style={{ color: "var(--text-primary)" }}>{rejectionReason}</span>
+          Rejeté : <span style={{ color: "var(--text-primary)" }}>{rejectionReason}</span>
         </div>
       ) : null}
 
