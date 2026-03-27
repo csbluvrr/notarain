@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useDemoMode } from "../demo/DemoContext";
-import TestamentCard from "../components\TestamentCard";
+import TestamentCard from "../components/TestamentCard";
 
 function truncateAddress(address = "") {
   if (address.length <= 10) return address;
