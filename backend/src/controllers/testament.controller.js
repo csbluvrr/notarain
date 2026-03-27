@@ -137,11 +137,47 @@ async function getTestamentById(req, res) {
   }
 }
 
+async function updateHeirs(req, res) {
+  try {
+    const { id } = req.params;
+    const { heirs } = req.body || {};
+
+    if (!Array.isArray(heirs)) {
+      return res.status(400).json({ error: "heirs must be an array" });
+    }
+
+    const testament = await Testament.findById(id);
+    if (!testament) {
+      return res.status(404).json({ error: "Testament not found" });
+    }
+
+    const wallet = normalizeWalletAddress(req.user.walletAddress);
+    if (testament.testatorWallet !== wallet) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const sanitizedHeirs = heirs.map((h) => ({
+      walletAddress: normalizeWalletAddress(h?.walletAddress),
+      name: String(h?.name || "").trim(),
+      share: String(h?.share || "").trim()
+    }));
+
+    testament.heirs = sanitizedHeirs;
+    testament.updatedAt = new Date();
+    await testament.save();
+
+    return res.status(200).json({ testament });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Server error" });
+  }
+}
+
 module.exports = {
   uploadTestament,
   submitTestament,
   setBlockchainId,
   getMyTestaments,
-  getTestamentById
+  getTestamentById,
+  updateHeirs
 };
 

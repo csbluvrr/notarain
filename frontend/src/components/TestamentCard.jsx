@@ -5,7 +5,7 @@ function formatDate(value) {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString();
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 function truncateMiddle(text, left = 10, right = 4) {
@@ -14,7 +14,7 @@ function truncateMiddle(text, left = 10, right = 4) {
   return `${s.slice(0, left)}...${s.slice(-right)}`;
 }
 
-export default function TestamentCard({ testament }) {
+export default function TestamentCard({ testament, actions = null }) {
   const {
     originalFileName,
     status,
@@ -27,30 +27,40 @@ export default function TestamentCard({ testament }) {
   const hasBlockchainId = blockchainId !== undefined && blockchainId !== null && Number(blockchainId) > 0;
 
   return (
-    <div className="border border-gray-700 rounded-lg p-4 bg-gray-800/50">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="font-semibold truncate">{originalFileName || "Sans titre"}</div>
-          <div className="text-xs text-gray-300 mt-1">{formatDate(createdAt)}</div>
+    <div className="card">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 border rounded-lg flex items-center justify-center shrink-0" style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7">
+            <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+            <path d="M14 3v6h6" />
+          </svg>
         </div>
-        <StatusBadge status={status} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 justify-between">
+            <div className="font-medium text-base truncate">{originalFileName || "Untitled Testament"}</div>
+            <StatusBadge status={status} />
+          </div>
+
+          <div className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            {formatDate(createdAt)}
+          </div>
+
+          {hasBlockchainId ? (
+            <div className="mt-2 text-xs" style={{ color: "var(--success)" }}>
+              Chain ID: {blockchainId}
+            </div>
+          ) : null}
+
+          {ipfsCid ? (
+            <div className="mt-1 text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
+              {cidDisplay}
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <div className="mt-3 text-sm text-gray-200">
-        {hasBlockchainId ? (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">ID blockchain :</span>
-            <span className="font-mono">{blockchainId}</span>
-          </div>
-        ) : null}
-
-        {ipfsCid ? (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-gray-400">CID IPFS :</span>
-            <span className="font-mono">{cidDisplay}</span>
-          </div>
-        ) : null}
-      </div>
+      {actions ? <div className="mt-4 flex flex-wrap gap-2">{actions}</div> : null}
     </div>
   );
 }

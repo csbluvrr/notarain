@@ -31,6 +31,13 @@ router.post(
   testamentController.setBlockchainId
 );
 
+router.post(
+  "/heirs/:id",
+  authRequired,
+  requireRole("testator"),
+  testamentController.updateHeirs
+);
+
 router.get(
   "/my",
   authRequired,

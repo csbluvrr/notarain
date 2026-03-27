@@ -28,14 +28,14 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       if (!window.ethereum) {
-        throw new Error("MetaMask introuvable. Installez-le pour continuer.");
+        throw new Error("MetaMask not found. Please install it.");
       }
 
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts"
       });
       if (!accounts || !accounts.length) {
-        throw new Error("Aucun compte détecté dans votre portefeuille");
+        throw new Error("No wallet accounts found");
       }
 
       const walletAddress = accounts[0].toLowerCase();
@@ -52,14 +52,14 @@ export function AuthProvider({ children }) {
             params: [{ chainId: chainIdParam }]
           });
         } catch (err) {
-          throw new Error("Veuillez basculer votre portefeuille sur le réseau Sepolia");
+          throw new Error("Please switch your wallet to Sepolia");
         }
       }
 
       const nonceRes = await api.post("/api/auth/nonce", { walletAddress });
       const message = nonceRes?.data?.message;
       if (!message) {
-        throw new Error("Impossible de récupérer le message de connexion");
+        throw new Error("Failed to fetch login nonce");
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
       const newToken = verifyRes?.data?.token;
       const newUser = verifyRes?.data?.user;
       if (!newToken || !newUser) {
-        throw new Error("Connexion impossible");
+        throw new Error("Login failed");
       }
 
       localStorage.setItem("notarain_token", newToken);
@@ -81,11 +81,11 @@ export function AuthProvider({ children }) {
 
       const role = String(newUser.role || "").toLowerCase();
       if (role === "testator" || role === "admin") {
-        window.location.href = "/testateur";
+        window.location.href = "/dashboard";
       } else if (role === "notary") {
-        window.location.href = "/notaire";
+        window.location.href = "/notary";
       } else if (role === "heir") {
-        window.location.href = "/beneficiaire";
+        window.location.href = "/heir";
       } else {
         window.location.href = "/";
       }

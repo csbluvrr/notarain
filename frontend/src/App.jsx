@@ -6,30 +6,40 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 
-import Accueil from "./pages/Accueil";
-import ConnexionWallet from "./pages/ConnexionWallet";
-import DashboardTestateur from "./pages/DashboardTestateur";
-import DashboardNotaire from "./pages/DashboardNotaire";
-import DashboardBeneficiaire from "./pages/DashboardBeneficiaire";
-import UploadTestament from "./pages/UploadTestament";
+import Landing from "./pages/Landing";
+import Dashboard from "./pages/Dashboard";
+import Upload from "./pages/Upload";
+import NotaryDashboard from "./pages/NotaryDashboard";
+import HeirDashboard from "./pages/HeirDashboard";
 import DetailsTestament from "./pages/DetailsTestament";
 import Page404 from "./pages/Page404";
 
 export default function App() {
   return (
     <AuthProvider>
-      <Toaster position="top-right" />
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: "#1E1E2E",
+            color: "#F0EEF8",
+            border: "1px solid #2A2A3D",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontFamily: "Inter, sans-serif"
+          }
+        }}
+      />
       <BrowserRouter>
-        <div className="min-h-screen bg-gray-900">
+        <div className="app-shell">
           <Navbar />
           <Routes>
-            <Route path="/" element={<Accueil />} />
-            <Route path="/connexion" element={<ConnexionWallet />} />
+            <Route path="/" element={<Landing />} />
             <Route
-              path="/testateur"
+              path="/dashboard"
               element={
                 <ProtectedRoute role={["testator", "admin"]}>
-                  <DashboardTestateur />
+                  <Dashboard />
                 </ProtectedRoute>
               }
             />
@@ -37,23 +47,23 @@ export default function App() {
               path="/upload"
               element={
                 <ProtectedRoute role={["testator", "admin"]}>
-                  <UploadTestament />
+                  <Upload />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/notaire"
+              path="/notary"
               element={
                 <ProtectedRoute role="notary">
-                  <DashboardNotaire />
+                  <NotaryDashboard />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/beneficiaire"
+              path="/heir"
               element={
                 <ProtectedRoute role="heir">
-                  <DashboardBeneficiaire />
+                  <HeirDashboard />
                 </ProtectedRoute>
               }
             />
