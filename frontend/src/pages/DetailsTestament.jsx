@@ -119,10 +119,19 @@ export default function DetailsTestament() {
       setDecrypting(true);
       toast.loading("Téléchargement du fichier chiffré...", { id: "dl" });
       if (isDemoMode) {
-        const blob = await demoDecryptDocument(testament, mdp);
+        const maybeBlob = await demoDecryptDocument(testament, mdp);
         toast.success("Fichier téléchargé", { id: "dl" });
         toast.loading("Déchiffrement en cours...", { id: "dec" });
         toast.success("Déchiffrement réussi", { id: "dec" });
+        const blob =
+          maybeBlob instanceof Blob
+            ? maybeBlob
+            : maybeBlob?.blob instanceof Blob
+              ? maybeBlob.blob
+              : null;
+        if (!blob) {
+          throw new Error("Impossible d’ouvrir le document démo");
+        }
         const url = URL.createObjectURL(blob);
         setPdfUrl((old) => {
           if (old) URL.revokeObjectURL(old);

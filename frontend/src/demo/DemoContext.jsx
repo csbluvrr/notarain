@@ -9,6 +9,31 @@ import {
 
 const DemoContext = createContext(null);
 
+const STORAGE_ROLE_KEY = "notarain_demo_role";
+
+function readStoredRole() {
+  try {
+    const r = sessionStorage.getItem(STORAGE_ROLE_KEY);
+    const normalized = String(r || "").toLowerCase();
+    if (normalized === "testator" || normalized === "notary" || normalized === "heir") return normalized;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function persistRole(role) {
+  try {
+    if (!role) {
+      sessionStorage.removeItem(STORAGE_ROLE_KEY);
+      return;
+    }
+    sessionStorage.setItem(STORAGE_ROLE_KEY, String(role));
+  } catch {
+    // ignore storage errors (private mode, etc.)
+  }
+}
+
 const initialNotifications = [
   {
     id: 1,
@@ -58,9 +83,10 @@ function updateAllArrays({ testaments, pendingTestaments, allNotaryTestaments, h
 }
 
 export function DemoProvider({ children }) {
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [demoRole, setDemoRole] = useState(null);
-  const [demoUser, setDemoUser] = useState(null);
+  const storedRole = readStoredRole();
+  const [isDemoMode, setIsDemoMode] = useState(Boolean(storedRole));
+  const [demoRole, setDemoRole] = useState(storedRole);
+  const [demoUser, setDemoUser] = useState(storedRole ? demoUsers[storedRole] : null);
 
   const [testaments, setTestaments] = useState(initialTestatorTestaments);
   const [pendingTestaments, setPendingTestaments] = useState(initialPendingTestaments);
@@ -84,6 +110,7 @@ export function DemoProvider({ children }) {
   demoUserRef.current = demoUser;
 
   const resetAll = () => {
+    persistRole(null);
     setIsDemoMode(false);
     setDemoRole(null);
     setDemoUser(null);
@@ -98,6 +125,7 @@ export function DemoProvider({ children }) {
     const normalized = String(role || "").toLowerCase();
     const u = demoUsers[normalized];
     if (!u) return;
+    persistRole(normalized);
     setIsDemoMode(true);
     setDemoRole(normalized);
     setDemoUser(u);
@@ -540,7 +568,8 @@ ${heirsList}
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        resolve({ success: true });
+        // Retourne aussi le Blob pour les vues qui souhaitent l'afficher (ex: page Détails).
+        resolve(blob);
       }, 1500);
     });
   };

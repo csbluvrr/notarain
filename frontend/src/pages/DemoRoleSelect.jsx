@@ -93,7 +93,8 @@ export default function DemoRoleSelect() {
 
   const onEnter = (roleKey, path) => {
     enterDemo(roleKey);
-    navigate(path);
+    // Laisse DemoContext appliquer isDemoMode avant le guard /demo/*
+    setTimeout(() => navigate(path), 0);
   };
 
   return (
