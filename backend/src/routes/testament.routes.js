@@ -12,7 +12,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post(
   "/upload",
   authRequired,
-  requireRole("testator"),
+  requireRole("testator", "admin"),
   upload.single("file"),
   testamentController.uploadTestament
 );
@@ -20,21 +20,21 @@ router.post(
 router.post(
   "/submit/:id",
   authRequired,
-  requireRole("testator"),
+  requireRole("testator", "admin"),
   testamentController.submitTestament
 );
 
 router.post(
   "/blockchain/:id",
   authRequired,
-  requireRole("testator"),
+  requireRole("testator", "admin"),
   testamentController.setBlockchainId
 );
 
 router.get(
   "/my",
   authRequired,
-  requireRole("testator"),
+  requireRole("testator", "admin"),
   testamentController.getMyTestaments
 );
 

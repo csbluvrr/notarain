@@ -7,12 +7,17 @@ const pinata = new PinataClient(
 );
 
 function bufferToReadableStream(buffer) {
-  // Pinata expects a stream-like input.
   return Readable.from(buffer);
 }
 
 async function uploadEncryptedFile(buffer, filename) {
+  if (!process.env.PINATA_API_KEY || !process.env.PINATA_SECRET_API_KEY) {
+    throw new Error("Pinata API credentials are not configured");
+  }
+
   const readable = bufferToReadableStream(buffer);
+  // Required by Pinata/form-data internals to infer a filename.
+  readable.path = filename || "testament.enc";
 
   const options = {
     pinataMetadata: {
@@ -20,8 +25,13 @@ async function uploadEncryptedFile(buffer, filename) {
     }
   };
 
-  const result = await pinata.pinFileToIPFS(readable, options);
-  return result.IpfsHash;
+  try {
+    const result = await pinata.pinFileToIPFS(readable, options);
+    return result.IpfsHash;
+  } catch (err) {
+    const details = err?.response?.data?.error || err?.message || "IPFS upload failed";
+    throw new Error(`IPFS upload failed: ${details}`);
+  }
 }
 
 async function getFile(cid) {
