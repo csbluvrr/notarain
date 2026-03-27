@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { ethers } from "ethers";
 import api from "../services/api";
 import { getContract } from "../hooks/useContract";
+import { useDemoMode } from "../demo/DemoContext";
 
 const steps = ["Select File", "Encrypt & Upload", "Submit", "On-Chain"];
 
@@ -29,8 +30,12 @@ export default function Upload() {
   const [chainPending, setChainPending] = useState(false);
   const [encrypting, setEncrypting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [demoProgressMessage, setDemoProgressMessage] = useState("");
+  const [demoChainStage, setDemoChainStage] = useState(""); // demo-only: metamask-like status text
 
   const [errors, setErrors] = useState({});
+  const { isDemoMode, demoUploadTestament, demoSubmitTestament, demoRegisterOnChain } = useDemoMode();
 
   const progressState = useMemo(() => {
     return steps.map((_, idx) => {
@@ -67,25 +72,64 @@ export default function Upload() {
     if (Object.keys(nextErrors).length) return;
 
     try {
-      setEncrypting(true);
       const formData = new FormData();
       formData.append("file", file);
       formData.append("encryptionPassword", password);
-      setUploading(true);
 
-      const res = await api.post("/api/testament/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      setTestamentId(res?.data?.testamentId || "");
-      setIpfsCid(res?.data?.ipfsCid || "");
-      setDocumentHash(res?.data?.documentHash || "");
-      toast.success("Upload complete");
-      setStep(3);
+      if (isDemoMode) {
+        setEncrypting(true);
+        setUploading(false);
+        setVerifying(false);
+        setDemoProgressMessage("");
+
+        const res = await demoUploadTestament(file, password, (msg) => {
+          setDemoProgressMessage(msg || "");
+          if (msg === "Encrypting document with AES-256...") {
+            setEncrypting(true);
+            setUploading(false);
+            setVerifying(false);
+          } else if (msg === "Uploading encrypted file to IPFS...") {
+            setEncrypting(false);
+            setUploading(true);
+            setVerifying(false);
+          } else if (msg === "Verifying upload integrity...") {
+            setEncrypting(false);
+            setUploading(false);
+            setVerifying(true);
+          }
+        });
+
+        setEncrypting(false);
+        setUploading(false);
+        setVerifying(false);
+        setDemoProgressMessage("");
+
+        setTestamentId(res?.testamentId || "");
+        setIpfsCid(res?.ipfsCid || "");
+        setDocumentHash(res?.documentHash || "");
+        toast.success("Upload complete");
+        setStep(3);
+      } else {
+        setEncrypting(true);
+        setUploading(true);
+
+        const res = await api.post("/api/testament/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+
+        setTestamentId(res?.data?.testamentId || "");
+        setIpfsCid(res?.data?.ipfsCid || "");
+        setDocumentHash(res?.data?.documentHash || "");
+        toast.success("Upload complete");
+        setStep(3);
+      }
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || "Upload failed");
     } finally {
       setEncrypting(false);
       setUploading(false);
+      setVerifying(false);
+      setDemoProgressMessage("");
     }
   };
 
@@ -93,7 +137,13 @@ export default function Upload() {
     if (!testamentId) return toast.error("Missing testament identifier.");
     try {
       setSubmittingReview(true);
-      await api.post(`/api/testament/submit/${testamentId}`);
+
+      if (isDemoMode) {
+        await demoSubmitTestament(testamentId);
+      } else {
+        await api.post(`/api/testament/submit/${testamentId}`);
+      }
+
       toast.success("Submitted for notary review");
       setStep(4);
     } catch (err) {
@@ -110,19 +160,34 @@ export default function Upload() {
     }
     try {
       setChainPending(true);
-      const contract = await getContract();
-      const hashHex = documentHash.startsWith("0x") ? documentHash : `0x${documentHash}`;
-      const documentHashBytes32 = ethers.hexlify(hashHex);
-      const tx = await contract.registerTestament(ipfsCid, documentHashBytes32);
-      const receipt = await tx.wait();
-      const minedHash = receipt?.hash || tx?.hash || "";
-      setTxHash(minedHash);
-      await api.post(`/api/testament/blockchain/${testamentId}`, { blockchainId: 0, txHash: minedHash });
+
+      if (isDemoMode) {
+        setDemoChainStage("Waiting for MetaMask...");
+        const s1 = setTimeout(() => setDemoChainStage("Transaction submitted..."), 500);
+        const s2 = setTimeout(() => setDemoChainStage("Confirming on Sepolia..."), 1500);
+        const { txHash: minedHash, blockchainId } = await demoRegisterOnChain(testamentId, ipfsCid, documentHash);
+        clearTimeout(s1);
+        clearTimeout(s2);
+        setTxHash(minedHash || "");
+        if (blockchainId) toast.success(`Registered on-chain (#${blockchainId})`);
+        setDemoChainStage("");
+      } else {
+        const contract = await getContract();
+        const hashHex = documentHash.startsWith("0x") ? documentHash : `0x${documentHash}`;
+        const documentHashBytes32 = ethers.hexlify(hashHex);
+        const tx = await contract.registerTestament(ipfsCid, documentHashBytes32);
+        const receipt = await tx.wait();
+        const minedHash = receipt?.hash || tx?.hash || "";
+        setTxHash(minedHash);
+        await api.post(`/api/testament/blockchain/${testamentId}`, { blockchainId: 0, txHash: minedHash });
+      }
+
       toast.success("Transaction confirmed");
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || "Blockchain registration failed");
     } finally {
       setChainPending(false);
+      setDemoChainStage("");
     }
   };
 
@@ -282,20 +347,52 @@ export default function Upload() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <button type="button" className="btn-primary" onClick={encryptAndUpload} disabled={encrypting || uploading}>
-              {encrypting ? (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={encryptAndUpload}
+              disabled={encrypting || uploading || verifying}
+            >
+              {encrypting || uploading || verifying ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span className="spinner" /> Encrypting...
-                </span>
-              ) : uploading ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span className="spinner" /> Uploading to IPFS...
+                  <span className="spinner" />
+                  {isDemoMode
+                    ? demoProgressMessage || "Processing..."
+                    : encrypting
+                      ? "Encrypting..."
+                      : uploading
+                        ? "Uploading to IPFS..."
+                        : "Verifying upload..."}
                 </span>
               ) : (
                 "Encrypt & Upload"
               )}
             </button>
           </div>
+
+          {isDemoMode ? (
+            <div style={{ marginTop: 12, display: "grid", gap: 6, color: "var(--text-secondary)", fontSize: 13 }}>
+              {[
+                "Encrypting document with AES-256...",
+                "Uploading encrypted file to IPFS...",
+                "Verifying upload integrity..."
+              ].map((label) => {
+                const done =
+                  (ipfsCid && documentHash) ||
+                  (demoProgressMessage === "Uploading encrypted file to IPFS..." && label === "Encrypting document with AES-256...") ||
+                  (demoProgressMessage === "Verifying upload integrity..." && label !== "Verifying upload integrity...");
+                const active = demoProgressMessage === label;
+                return (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ color: done ? "var(--success)" : active ? "var(--accent)" : "var(--text-muted)" }}>
+                      {done ? "✓" : active ? <span className="spinner" style={{ width: 14, height: 14 }} /> : "•"}
+                    </span>
+                    <span style={{ color: active ? "var(--accent)" : "var(--text-secondary)" }}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
 
           {ipfsCid ? (
             <div style={{ marginTop: 14 }}>
@@ -340,7 +437,7 @@ export default function Upload() {
             )}
           </button>
           <div style={{ marginTop: 10 }}>
-            <Link to="/dashboard" className="btn-secondary">
+            <Link to={isDemoMode ? "/demo/testator" : "/dashboard"} className="btn-secondary">
               View My Testaments Now
             </Link>
           </div>
@@ -372,13 +469,13 @@ export default function Upload() {
             <button type="button" className="btn-primary" onClick={registerOnChain} disabled={chainPending}>
               {chainPending ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span className="spinner" /> Confirming...
+                  <span className="spinner" /> {isDemoMode ? demoChainStage || "Confirming..." : "Confirming..."}
                 </span>
               ) : (
                 "Register on Blockchain"
               )}
             </button>
-            <Link to="/dashboard" className="btn-secondary">
+            <Link to={isDemoMode ? "/demo/testator" : "/dashboard"} className="btn-secondary">
               Back to Dashboard
             </Link>
           </div>
@@ -401,6 +498,13 @@ export default function Upload() {
               >
                 {txHash}
               </a>
+            </div>
+          ) : null}
+          {isDemoMode && txHash ? (
+            <div style={{ marginTop: 12 }}>
+              <Link to="/demo/testator" className="btn-primary">
+                Go to Dashboard
+              </Link>
             </div>
           ) : null}
         </div>

@@ -20,7 +20,8 @@ export default function TestamentCard({ testament, actions = null, isDemo = fals
     status,
     createdAt,
     blockchainId,
-    ipfsCid
+    ipfsCid,
+    rejectionReason
   } = testament || {};
 
   const cidDisplay = ipfsCid ? truncateMiddle(ipfsCid) : "";
@@ -72,6 +73,22 @@ export default function TestamentCard({ testament, actions = null, isDemo = fals
           ) : null}
         </div>
       </div>
+
+      {status === "rejected" && rejectionReason ? (
+        <div
+          style={{
+            marginTop: 12,
+            background: "var(--danger-dim)",
+            border: "1px solid var(--danger)",
+            borderRadius: 10,
+            padding: "10px 12px",
+            color: "var(--danger)",
+            fontSize: 13
+          }}
+        >
+          Rejected: <span style={{ color: "var(--text-primary)" }}>{rejectionReason}</span>
+        </div>
+      ) : null}
 
       {actions ? <div className="mt-4 flex flex-wrap gap-2">{actions}</div> : null}
     </div>

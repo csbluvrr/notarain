@@ -100,8 +100,12 @@ export default function Landing() {
         </div>
       )}
 
-      <div style={{ marginTop: 16, marginBottom: 8 }}>
-        <div style={{ width: 1, height: 1, margin: "12px auto", borderBottom: "1px solid var(--border)" }} />
+      <div style={{ marginTop: 24, marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 16 }}>
+          <div style={{ height: 1, background: "var(--border)", flex: 1, maxWidth: 160 }} />
+          <div style={{ color: "var(--text-muted)", fontSize: 12 }}>or</div>
+          <div style={{ height: 1, background: "var(--border)", flex: 1, maxWidth: 160 }} />
+        </div>
         <button
           type="button"
           onClick={goToDemo}
@@ -110,20 +114,23 @@ export default function Landing() {
             border: "1px solid var(--border-light)",
             color: "var(--text-secondary)",
             borderRadius: 8,
-            padding: "10px 28px",
+            padding: "11px 32px",
             fontSize: 14,
             cursor: "pointer",
-            transition: "0.2s ease",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            marginTop: 8
+            transition: "0.2s ease"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.color = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-light)";
+            e.currentTarget.style.color = "var(--text-secondary)";
           }}
         >
-          <span>▶</span>
-          <span>Try Demo</span>
+          ▶&nbsp; Try Demo
         </button>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, textAlign: "center" }}>
           No wallet required · Simulated data
         </div>
       </div>

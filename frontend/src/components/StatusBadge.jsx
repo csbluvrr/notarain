@@ -40,6 +40,14 @@ const STATUS_META = {
       borderColor: "var(--accent)",
       color: "var(--accent)"
     }
+  },
+  revoked: {
+    label: "Revoked",
+    style: {
+      background: "var(--surface-3)",
+      borderColor: "var(--border-light)",
+      color: "var(--text-muted)"
+    }
   }
 };
 

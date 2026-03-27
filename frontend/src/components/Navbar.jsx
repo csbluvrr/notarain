@@ -1,10 +1,12 @@
 import React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import useAuth from "../hooks/useAuth";
 import { useDemoMode } from "../demo/DemoContext";
 import ConnectWallet from "./ConnectWallet";
+import NotificationDropdown from "./NotificationDropdown";
+import ProfileDropdown from "./ProfileDropdown";
 
 function truncateMiddle(text, left = 6, right = 4) {
   const s = String(text || "");
@@ -23,9 +25,31 @@ function roleLabel(role) {
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { isDemoMode, demoUser, exitDemo } = useDemoMode();
+  const {
+    isDemoMode,
+    demoUser,
+    demoRole,
+    exitDemo,
+    notifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    testaments,
+    pendingTestaments,
+    allNotaryTestaments,
+    heirTestaments
+  } = useDemoMode();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [notifOpen, setNotifOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
+  const notifAnchorRef = React.useRef(null);
+  const profileAnchorRef = React.useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  if (!isDemoMode && String(location.pathname || "").startsWith("/demo")) {
+    // Sur la sélection de rôle démo, on n'affiche pas la navbar.
+    return null;
+  }
 
   const onLogout = async () => {
     try {
@@ -36,6 +60,42 @@ export default function Navbar() {
       toast.error("Logout failed");
     }
   };
+
+  const activeUser = isDemoMode ? demoUser : user;
+
+  const unreadCount = React.useMemo(() => {
+    const list = Array.isArray(notifications) ? notifications : [];
+    return list.filter((n) => !n.read).length;
+  }, [notifications]);
+
+  const profileStats = React.useMemo(() => {
+    if (!isDemoMode) return null;
+    const role = String(demoRole || demoUser?.role || "").toLowerCase();
+    if (role === "testator") {
+      const list = Array.isArray(testaments) ? testaments : [];
+      return {
+        total: list.length,
+        approved: list.filter((t) => t.status === "approved").length,
+        executed: list.filter((t) => t.status === "executed").length
+      };
+    }
+    if (role === "notary") {
+      const list = Array.isArray(allNotaryTestaments) ? allNotaryTestaments : [];
+      return {
+        reviewed: list.length,
+        approved: list.filter((t) => t.status === "approved").length,
+        rejected: list.filter((t) => t.status === "rejected").length
+      };
+    }
+    if (role === "heir") {
+      const list = Array.isArray(heirTestaments) ? heirTestaments : [];
+      return {
+        accessible: list.length,
+        executed: list.filter((t) => t.status === "executed").length
+      };
+    }
+    return null;
+  }, [isDemoMode, demoRole, demoUser?.role, testaments, allNotaryTestaments, heirTestaments]);
 
   return (
     <header
@@ -90,29 +150,113 @@ export default function Navbar() {
           Menu
         </button>
 
-        <div className="navbar-right-desktop" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {isDemoMode ? (
+          <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+            <span
+              style={{
+                padding: "4px 14px",
+                borderRadius: 20,
+                background: "var(--warning-dim)",
+                border: "1px solid var(--warning)",
+                color: "var(--warning)",
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: 1,
+                textTransform: "uppercase"
+              }}
+            >
+              DEMO MODE
+            </span>
+          </div>
+        ) : null}
+
+        <div className="navbar-right-desktop" style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
           {isDemoMode ? (
             <>
+              <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{demoUser?.name}</span>
               <span
                 style={{
-                  padding: "3px 12px",
-                  borderRadius: 20,
-                  background: "var(--warning-dim)",
-                  border: "1px solid var(--warning)",
-                  color: "var(--warning)",
-                  fontSize: 11,
-                  fontWeight: 500
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  background: "var(--accent-dim)",
+                  border: "1px solid var(--accent)",
+                  color: "var(--accent)",
+                  fontSize: 12
                 }}
               >
-                DEMO MODE
+                {roleLabel(demoUser?.role)}
               </span>
-              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                {demoUser?.name} ({roleLabel(demoUser?.role)})
-              </span>
+
+              {String(demoUser?.role || "").toLowerCase() === "testator" ? (
+                <div style={{ position: "relative" }} ref={notifAnchorRef}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: "8px 10px", position: "relative" }}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      setNotifOpen((v) => !v);
+                    }}
+                    aria-label="Notifications"
+                  >
+                    🔔
+                    {unreadCount > 0 ? (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          right: 6,
+                          top: 6,
+                          width: 8,
+                          height: 8,
+                          borderRadius: 999,
+                          background: "var(--danger)"
+                        }}
+                      />
+                    ) : null}
+                  </button>
+                  <NotificationDropdown
+                    open={notifOpen}
+                    notifications={notifications || []}
+                    anchorRef={notifAnchorRef}
+                    onClose={() => setNotifOpen(false)}
+                    onMarkRead={(id) => {
+                      markNotificationRead?.(id);
+                    }}
+                    onMarkAllRead={() => {
+                      markAllNotificationsRead?.();
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              <div style={{ position: "relative" }} ref={profileAnchorRef}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ padding: "8px 10px" }}
+                  onClick={() => {
+                    setNotifOpen(false);
+                    setProfileOpen((v) => !v);
+                  }}
+                >
+                  Profile
+                </button>
+                <ProfileDropdown
+                  open={profileOpen}
+                  anchorRef={profileAnchorRef}
+                  onClose={() => setProfileOpen(false)}
+                  user={activeUser}
+                  stats={profileStats}
+                />
+              </div>
+
               <button
                 type="button"
                 className="btn-secondary"
                 onClick={() => {
+                  setNotifOpen(false);
+                  setProfileOpen(false);
                   exitDemo();
                   navigate("/");
                 }}
@@ -135,6 +279,23 @@ export default function Navbar() {
                 {roleLabel(user.role)}
               </span>
               <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{truncateMiddle(user.walletAddress)}</span>
+              <div style={{ position: "relative" }} ref={profileAnchorRef}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ padding: "8px 10px" }}
+                  onClick={() => setProfileOpen((v) => !v)}
+                >
+                  Profile
+                </button>
+                <ProfileDropdown
+                  open={profileOpen}
+                  anchorRef={profileAnchorRef}
+                  onClose={() => setProfileOpen(false)}
+                  user={user}
+                  stats={null}
+                />
+              </div>
               <button type="button" className="btn-secondary" onClick={onLogout}>
                 Logout
               </button>

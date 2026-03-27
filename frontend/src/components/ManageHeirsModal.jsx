@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import { useDemoMode } from "../demo/DemoContext";
 
 function truncateAddress(address) {
   const v = String(address || "");
@@ -9,6 +10,7 @@ function truncateAddress(address) {
 }
 
 export default function ManageHeirsModal({ open, testament, onClose, onSaved }) {
+  const { isDemoMode, demoSaveHeirs } = useDemoMode();
   const [heirs, setHeirs] = useState([]);
   const [name, setName] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
@@ -61,7 +63,11 @@ export default function ManageHeirsModal({ open, testament, onClose, onSaved }) 
     if (!testament?._id) return;
     try {
       setSaving(true);
-      await api.post(`/api/testament/heirs/${testament._id}`, { heirs });
+      if (isDemoMode) {
+        await demoSaveHeirs(testament._id, heirs);
+      } else {
+        await api.post(`/api/testament/heirs/${testament._id}`, { heirs });
+      }
       toast.success("Beneficiaries updated");
       onSaved?.();
       onClose?.();

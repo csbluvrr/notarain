@@ -6,6 +6,7 @@ import useAuth from "../hooks/useAuth";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import { useDemoMode } from "../demo/DemoContext";
 
 const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
@@ -22,12 +23,24 @@ function formatDate(value) {
 
 export default function NotaryDashboard() {
   const { user } = useAuth();
+  const {
+    isDemoMode,
+    demoUser,
+    pendingTestaments,
+    allNotaryTestaments,
+    demoApproveTestament,
+    demoRejectTestament,
+    demoExecuteTestament
+  } = useDemoMode();
   const [tab, setTab] = useState("pending");
   const [pending, setPending] = useState([]);
   const [all, setAll] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, type: null, item: null });
   const [removingId, setRemovingId] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // all|pending|approved|rejected|executed
 
   const pendingCount = pending.length;
 
@@ -45,11 +58,23 @@ export default function NotaryDashboard() {
   };
 
   useEffect(() => {
+    if (isDemoMode) {
+      setPending(pendingTestaments || []);
+      setAll(allNotaryTestaments || []);
+      setLoading(false);
+      return;
+    }
     load();
-  }, []);
+  }, [isDemoMode, pendingTestaments, allNotaryTestaments]);
 
-  const openModal = (type, item) => setModal({ open: true, type, item });
-  const closeModal = () => setModal({ open: false, type: null, item: null });
+  const openModal = (type, item) => {
+    setModal({ open: true, type, item });
+    if (type === "reject") setRejectReason("");
+  };
+  const closeModal = () => {
+    setModal({ open: false, type: null, item: null });
+    setRejectReason("");
+  };
 
   const modalMeta = useMemo(() => {
     if (!modal.open || !modal.type) return null;
@@ -77,44 +102,74 @@ export default function NotaryDashboard() {
     };
   }, [modal]);
 
+  const rejectDisabled = isDemoMode && modal.type === "reject" && String(rejectReason || "").trim().length < 10;
+
   const performAction = async () => {
     const item = modal.item;
     if (!item) return;
+    if (rejectDisabled) return;
     try {
       setRemovingId(item._id);
       if (modal.type === "approve") {
-        await api.post(`/api/notary/approve/${item._id}`);
-        if (Number(item.blockchainId || 0) > 0) {
-          const contract = await getContract();
-          const tx = await contract.approveTestament(Number(item.blockchainId));
-          await tx.wait();
+        if (isDemoMode) {
+          await demoApproveTestament(item._id);
+        } else {
+          await api.post(`/api/notary/approve/${item._id}`);
+          if (Number(item.blockchainId || 0) > 0) {
+            const contract = await getContract();
+            const tx = await contract.approveTestament(Number(item.blockchainId));
+            await tx.wait();
+          }
         }
         toast.success("Testament approved");
       } else if (modal.type === "reject") {
-        await api.post(`/api/notary/reject/${item._id}`);
-        if (Number(item.blockchainId || 0) > 0) {
-          const contract = await getContract();
-          const tx = await contract.rejectTestament(Number(item.blockchainId));
-          await tx.wait();
+        if (isDemoMode) {
+          await demoRejectTestament(item._id, rejectReason);
+        } else {
+          await api.post(`/api/notary/reject/${item._id}`);
+          if (Number(item.blockchainId || 0) > 0) {
+            const contract = await getContract();
+            const tx = await contract.rejectTestament(Number(item.blockchainId));
+            await tx.wait();
+          }
         }
         toast.success("Testament rejected");
       } else {
-        await api.post(`/api/notary/execute/${item._id}`);
-        if (Number(item.blockchainId || 0) > 0) {
-          const contract = await getContract();
-          const tx = await contract.confirmDeath(Number(item.blockchainId));
-          await tx.wait();
+        if (isDemoMode) {
+          await demoExecuteTestament(item._id);
+        } else {
+          await api.post(`/api/notary/execute/${item._id}`);
+          if (Number(item.blockchainId || 0) > 0) {
+            const contract = await getContract();
+            const tx = await contract.confirmDeath(Number(item.blockchainId));
+            await tx.wait();
+          }
         }
         toast.success("Death confirmed");
       }
       closeModal();
-      await load();
+      if (!isDemoMode) {
+        await load();
+      }
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.message || "Action failed");
     } finally {
       setRemovingId("");
     }
   };
+
+  const filteredAll = useMemo(() => {
+    const list = Array.isArray(all) ? all : [];
+    const q = String(search || "").trim().toLowerCase();
+    return list.filter((t) => {
+      const matchQ =
+        !q ||
+        String(t.originalFileName || "").toLowerCase().includes(q) ||
+        String(t.testatorWallet || "").toLowerCase().includes(q);
+      const matchStatus = statusFilter === "all" ? true : String(t.status || "").toLowerCase() === statusFilter;
+      return matchQ && matchStatus;
+    });
+  }, [all, search, statusFilter]);
 
   const copyHash = async (hash) => {
     try {
@@ -128,7 +183,7 @@ export default function NotaryDashboard() {
   return (
     <section className="page-container">
       <h1 className="page-title">Review Panel</h1>
-      <p className="page-subtitle">Connected notary: {truncateAddress(user?.walletAddress || "")}</p>
+      <p className="page-subtitle">Connected notary: {truncateAddress((isDemoMode ? demoUser?.walletAddress : user?.walletAddress) || "")}</p>
 
       <div style={{ marginBottom: 20 }}>
         <span
@@ -252,6 +307,27 @@ export default function NotaryDashboard() {
         </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              className="input"
+              style={{ maxWidth: 320 }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by filename or wallet..."
+            />
+            <select
+              className="input"
+              style={{ maxWidth: 220 }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="executed">Executed</option>
+            </select>
+          </div>
           <div
             style={{
               display: "grid",
@@ -269,7 +345,7 @@ export default function NotaryDashboard() {
             <div>Date</div>
             <div>Actions</div>
           </div>
-          {all.map((t) => (
+          {filteredAll.map((t) => (
             <div
               key={t._id}
               style={{
@@ -305,7 +381,25 @@ export default function NotaryDashboard() {
         variant={modalMeta?.variant}
         onCancel={closeModal}
         onConfirm={performAction}
-      />
+      >
+        {isDemoMode && modal.type === "reject" ? (
+          <div>
+            <label style={{ display: "block", marginBottom: 6, color: "var(--text-secondary)", fontSize: 13 }}>
+              Reason for rejection
+            </label>
+            <textarea
+              className="input"
+              style={{ minHeight: 80, resize: "vertical" }}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Missing witness signatures on page 3"
+            />
+            <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
+              {Math.max(0, 10 - String(rejectReason || "").trim().length)} more character(s) required.
+            </div>
+          </div>
+        ) : null}
+      </ConfirmModal>
     </section>
   );
 }
