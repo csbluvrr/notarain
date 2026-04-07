@@ -1,26 +1,22 @@
-const mongoose = require("mongoose");
+const users = new Map();
 
-const UserSchema = new mongoose.Schema({
-  walletAddress: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
+const User = {
+  async findOne({ walletAddress }) {
+    const user = users.get(walletAddress.toLowerCase());
+    return user || null;
   },
-  role: {
-    type: String,
-    enum: ["testator", "notary", "admin"],
-    default: "testator"
-  },
-  nonce: {
-    type: String
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  async create({ walletAddress, role }) {
+    const user = {
+      walletAddress: walletAddress.toLowerCase(),
+      role: role || "testator",
+      nonce: null,
+      save: async function() {
+        users.set(this.walletAddress, this);
+      }
+    };
+    users.set(user.walletAddress, user);
+    return user;
   }
-});
+};
 
-module.exports = mongoose.model("User", UserSchema);
-
+module.exports = User;

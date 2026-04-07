@@ -1,183 +1,136 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 
-import api from "../services/api";
-import StatusBadge from "../components/StatusBadge";
-
-const STORAGE_KEY = "notarain_heir_testament_ids";
-
-function formatDate(value) {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString();
-}
+const STATUS_LABEL = {
+  0: { label: "Brouillon", color: "var(--text-muted)" },
+  1: { label: "En attente", color: "var(--warning)" },
+  2: { label: "Approuvé", color: "var(--success)" },
+  3: { label: "Rejeté", color: "var(--danger)" },
+  4: { label: "Décès signalé", color: "var(--info)" },
+  5: { label: "Exécuté", color: "var(--accent)" },
+};
 
 export default function DashboardBeneficiaire() {
+  const { user, getContract } = useAuth();
   const [testaments, setTestaments] = useState([]);
-  const [idRecherche, setIdRecherche] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [reporting, setReporting] = useState({});
+  const [certFile, setCertFile] = useState({});
 
-  const sauvegarderIds = (ids) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-  };
+  useEffect(() => { loadData(); }, []);
 
-  const ajouterIdLocal = (id) => {
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (!existing.includes(id)) {
-      const next = [id, ...existing];
-      sauvegarderIds(next);
-    }
-  };
-
-  const retirerIdLocal = (id) => {
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const next = existing.filter((x) => x !== id);
-    sauvegarderIds(next);
-  };
-
-  React.useEffect(() => {
-    let mounted = true;
-    async function chargerDepuisStockage() {
-      try {
-        setLoading(true);
-        const ids = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        if (!ids.length) return;
-
-        const results = await Promise.allSettled(ids.map((id) => api.get(`/api/testament/${id}`)));
-        const accessibles = results
-          .filter((r) => r.status === "fulfilled")
-          .map((r) => r.value?.data?.testament)
-          .filter((t) => t && t.status === "executed");
-
-        if (mounted) setTestaments(accessibles);
-      } catch {
-        if (mounted) setTestaments([]);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    chargerDepuisStockage();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const ajouterParId = async () => {
-    const id = idRecherche.trim();
-    if (!id) {
-      toast.error("Veuillez saisir un identifiant de testament");
-      return;
-    }
+  async function loadData() {
     try {
       setLoading(true);
-      const res = await api.get(`/api/testament/${id}`);
-      const t = res?.data?.testament;
-      if (!t) {
-        toast.error("Testament introuvable");
-        return;
-      }
-
-      if (t.status !== "executed") {
-        toast.error("Ce testament n’est pas encore exécutable/accessible (statut requis : Exécuté)");
-        return;
-      }
-
-      setTestaments((prev) => {
-        const exists = prev.some((x) => x._id === t._id);
-        if (exists) return prev;
-        return [t, ...prev];
-      });
-      ajouterIdLocal(t._id);
-      setIdRecherche("");
-      toast.success("Testament ajouté à votre liste");
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Recherche impossible");
+      const c = await getContract();
+      const ids = await c.getHeirTestaments(user.walletAddress);
+      console.log("heir testament ids:", ids);
+      const tests = await Promise.all(ids.map(id => c.getTestament(id)));
+      setTestaments(tests.map((t, i) => ({
+        id: ids[i],
+        testator: t[1],
+        status: Number(t[5]),
+        deathCertificateCid: t[8],
+      })));
+    } catch (e) {
+      toast.error("Erreur: " + e.message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const retirer = (id) => {
-    setTestaments((prev) => prev.filter((t) => t._id !== id));
-    retirerIdLocal(id);
-    toast.success("Retiré de la liste");
-  };
+  async function reportDeath(id) {
+    const file = certFile[id];
+    if (!file) return toast.error("Ajoutez le certificat de décès");
+    try {
+      setReporting(r => ({ ...r, [id]: true }));
+      const fakeCid = "death_cert_" + Date.now();
+      const c = await getContract(true);
+      const tx = await c.reportDeath(id, fakeCid);
+      await tx.wait();
+      toast.success("Décès signalé — le notaire va confirmer");
+      loadData();
+    } catch (e) {
+      toast.error("Erreur: " + (e.reason || e.message));
+    } finally {
+      setReporting(r => ({ ...r, [id]: false }));
+    }
+  }
+
+  if (loading) return (
+    <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}>
+      <span className="spinner" style={{ width: 32, height: 32 }} />
+    </div>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="nr-card nr-card-hover nr-fade-in-up p-5 mb-6">
-        <h2 className="text-2xl font-bold">Espace Bénéficiaire</h2>
-        <p className="text-gray-300 mt-1">
-          Consultez les testaments accessibles (uniquement après validation et exécution).
-        </p>
-      </div>
+    <div className="page-container">
+      <h1 className="page-title">Espace Héritier</h1>
+      <p className="page-subtitle">Testaments dont vous êtes bénéficiaire</p>
 
-      <div className="nr-card nr-card-hover p-5">
-        <div className="font-semibold mb-2">Ajouter un testament accessible</div>
-        <div className="text-sm text-gray-300 mb-4">
-          Entrez l’identifiant MongoDB du testament (fourni pendant la démonstration) pour l’ajouter à votre liste.
+      {testaments.length === 0 ? (
+        <div className="card" style={{ textAlign: "center", padding: 48 }}>
+          <p style={{ color: "var(--text-muted)" }}>Aucun testament disponible.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            value={idRecherche}
-            onChange={(e) => setIdRecherche(e.target.value)}
-            placeholder="Identifiant du testament (ex: 65f...)"
-            className="flex-1 px-3 py-2 rounded-lg bg-gray-950 border border-gray-700 outline-none focus:border-indigo-500"
-          />
-          <button
-            type="button"
-            onClick={ajouterParId}
-            disabled={loading}
-            className="nr-btn-primary"
-          >
-            {loading ? "Recherche..." : "Ajouter"}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        {testaments.length === 0 ? (
-          <div className="nr-card p-6 text-gray-300">
-            Aucun testament accessible dans votre liste.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {testaments.map((t) => (
-              <div key={t._id} className="nr-card nr-card-hover p-5 nr-fade-in-up">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate">{t.originalFileName}</div>
-                    <div className="text-xs text-gray-300 mt-1">
-                      Testateur : <span className="font-mono">{t.testatorWallet}</span>
+      ) : (
+        <div style={{ display: "grid", gap: 20 }}>
+          {testaments.map((t, i) => {
+            const s = STATUS_LABEL[t.status] || STATUS_LABEL[2];
+            const id = t.id;
+            return (
+              <div key={i} className="card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
+                      Testament #{id.toString()}
                     </div>
-                    <div className="text-xs text-gray-300">Exécuté le : {formatDate(t.updatedAt)}</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                      Testateur: {String(t.testator).slice(0,6)}...{String(t.testator).slice(-4)}
+                    </div>
                   </div>
-                  <StatusBadge status={t.status} />
+                  <span style={{
+                    padding: "5px 12px", borderRadius: 999, fontSize: 12,
+                    background: s.color + "22", border: `1px solid ${s.color}`, color: s.color
+                  }}>
+                    {s.label}
+                  </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => navigate(`/testament/${t._id}`)}
-                  className="mt-4 px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition font-semibold shadow-lg shadow-emerald-950/40"
-                >
-                  Accéder au document
-                </button>
-                <button
-                  type="button"
-                  onClick={() => retirer(t._id)}
-                  className="mt-2 ml-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition font-semibold"
-                >
-                  Retirer
-                </button>
+                {t.status === 2 && (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <div style={{ padding: "10px 14px", background: "var(--warning-dim)", borderRadius: 8, fontSize: 13, color: "var(--warning)" }}>
+                      Le testament est approuvé. Si le testateur est décédé, signalez le décès.
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="input"
+                      style={{ padding: "10px 16px" }}
+                      onChange={e => setCertFile(f => ({ ...f, [id]: e.target.files[0] }))}
+                    />
+                    <button className="btn-gold-action" disabled={reporting[id]} onClick={() => reportDeath(id)}>
+                      {reporting[id] ? <span className="spinner" /> : "⚠️ Signaler le décès"}
+                    </button>
+                  </div>
+                )}
+
+                {t.status === 4 && (
+                  <div style={{ padding: "10px 14px", background: "var(--info-dim)", borderRadius: 8, fontSize: 13, color: "var(--info)" }}>
+                    Décès signalé — en attente de confirmation du notaire...
+                  </div>
+                )}
+
+                {t.status === 5 && (
+                  <div style={{ padding: "10px 14px", background: "var(--success-dim)", borderRadius: 8, fontSize: 13, color: "var(--success)" }}>
+                    ✅ Testament exécuté — vous avez accès à l'héritage.
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
-

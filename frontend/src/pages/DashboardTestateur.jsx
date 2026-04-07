@@ -1,132 +1,220 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { ethers } from "ethers";
 
-import api from "../services/api";
-import TestamentCard from "../components/TestamentCard";
-import { getContract } from "../hooks/useContract";
+const STATUS_LABEL = {
+  0: { label: "Brouillon", color: "var(--text-muted)" },
+  1: { label: "En attente", color: "var(--warning)" },
+  2: { label: "Approuvé", color: "var(--success)" },
+  3: { label: "Rejeté", color: "var(--danger)" },
+  4: { label: "Décès signalé", color: "var(--info)" },
+  5: { label: "Exécuté", color: "var(--accent)" },
+};
 
 export default function DashboardTestateur() {
+  const { user, getContract } = useAuth();
   const [testaments, setTestaments] = useState([]);
+  const [notaries, setNotaries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [showForm, setShowForm] = useState(false);
 
-  const load = async () => {
+  // Form state
+  const [selectedNotary, setSelectedNotary] = useState("");
+  const [pdfFile, setPdfFile] = useState(null);
+  const [heirs, setHeirs] = useState([{ address: "", name: "", share: "" }]);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
     try {
       setLoading(true);
-      const res = await api.get("/api/testament/my");
-      setTestaments(res?.data?.testaments || []);
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Chargement impossible");
+      const c = await getContract();
+
+      // Charger notaires
+      const notaryAddrs = await c.getNotaries();
+      const notaryInfos = await Promise.all(notaryAddrs.map(a => c.getNotaryInfo(a)));
+      setNotaries(notaryInfos.filter(n => n.isActive).map((n, i) => ({
+        address: notaryAddrs[i],
+        name: n.name,
+      })));
+
+      // Charger testaments
+      const ids = await c.getTestatorTestaments(user.walletAddress);
+      const tests = await Promise.all(ids.map(id => c.getTestament(id)));
+      setTestaments(tests.map((t, i) => ({ ...t, id: ids[i] })));
+    } catch (e) {
+      toast.error("Erreur chargement: " + e.message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  useEffect(() => {
-    load();
-  }, []);
+  async function handleSubmit() {
+    if (!selectedNotary) return toast.error("Choisissez un notaire");
+    if (!pdfFile) return toast.error("Ajoutez un fichier PDF");
+    if (heirs.some(h => !h.address || !h.name || !h.share)) return toast.error("Remplissez tous les héritiers");
+    const totalShare = heirs.reduce((s, h) => s + Number(h.share), 0);
+    if (totalShare !== 100) return toast.error("Les parts doivent totaliser 100%");
 
-  const soumettreAuNotaire = async (t) => {
     try {
-      await api.post(`/api/testament/submit/${t._id}`);
-      toast.success("Testament soumis au notaire");
-      await load();
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Soumission impossible");
+      setSubmitting(true);
+      // Hash du PDF
+      const buffer = await pdfFile.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = "0x" + hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // Pour l'instant on met un CID factice (sans Pinata)
+      const fakeCid = "ipfs_" + Date.now();
+
+      const c = await getContract(true);
+      const tx = await c.createTestament(
+        fakeCid,
+        hashHex,
+        selectedNotary,
+        heirs.map(h => h.address),
+        heirs.map(h => h.name),
+        heirs.map(h => Number(h.share))
+      );
+      await tx.wait();
+      toast.success("Testament déposé avec succès !");
+      setShowForm(false);
+      setPdfFile(null);
+      setHeirs([{ address: "", name: "", share: "" }]);
+      setSelectedNotary("");
+      loadData();
+    } catch (e) {
+      toast.error("Erreur: " + (e.reason || e.message));
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }
 
-  const enregistrerBlockchain = async (t) => {
-    if (!t?.ipfsCid || !t?.documentHash) {
-      toast.error("CID IPFS ou hash manquant");
-      return;
-    }
-    try {
-      const contract = await getContract();
+  function addHeir() {
+    setHeirs([...heirs, { address: "", name: "", share: "" }]);
+  }
 
-      const hashHex = t.documentHash.startsWith("0x") ? t.documentHash : `0x${t.documentHash}`;
-      const documentHashBytes32 = ethers.hexlify(hashHex);
+  function removeHeir(i) {
+    setHeirs(heirs.filter((_, idx) => idx !== i));
+  }
 
-      toast.loading("Transaction en cours...", { id: "tx" });
-      const tx = await contract.registerTestament(t.ipfsCid, documentHashBytes32);
-      const receipt = await tx.wait();
-      toast.success("Enregistré sur la blockchain", { id: "tx" });
+  function updateHeir(i, field, val) {
+    const updated = [...heirs];
+    updated[i][field] = val;
+    setHeirs(updated);
+  }
 
-      await api.post(`/api/testament/blockchain/${t._id}`, {
-        blockchainId: 0,
-        txHash: receipt?.hash
-      });
-
-      await load();
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Enregistrement blockchain impossible");
-    }
-  };
+  if (loading) return (
+    <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}>
+      <span className="spinner" style={{ width: 32, height: 32 }} />
+    </div>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="nr-card nr-card-hover nr-fade-in-up p-5 mb-6 flex items-center justify-between gap-4">
+    <div className="page-container">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
         <div>
-          <h2 className="text-2xl font-bold">Espace Testateur</h2>
-          <p className="text-gray-300 mt-1">Créez et gérez vos testaments.</p>
+          <h1 className="page-title">Mes Testaments</h1>
+          <p className="page-subtitle">Gérez vos testaments sur la blockchain</p>
         </div>
-        <Link
-          to="/upload"
-          className="nr-btn-primary"
-        >
-          ➕ Créer un testament
-        </Link>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
+          {showForm ? "Annuler" : "+ Déposer un testament"}
+        </button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-white" />
+      {showForm && (
+        <div className="card" style={{ marginBottom: 32, borderColor: "var(--accent)" }}>
+          <h2 style={{ fontSize: 22, marginBottom: 24 }}>Nouveau Testament</h2>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+              Notaire assigné
+            </label>
+            <select
+              className="input"
+              value={selectedNotary}
+              onChange={e => setSelectedNotary(e.target.value)}
+            >
+              <option value="">-- Choisir un notaire --</option>
+              {notaries.map(n => (
+                <option key={n.address} value={n.address}>{n.name} ({n.address.slice(0,6)}...{n.address.slice(-4)})</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
+              Fichier Testament (PDF)
+            </label>
+            <input
+              type="file"
+              accept=".pdf"
+              className="input"
+              onChange={e => setPdfFile(e.target.files[0])}
+              style={{ padding: "10px 16px" }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <label style={{ fontSize: 13, color: "var(--text-secondary)" }}>Héritiers</label>
+              <button className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={addHeir}>
+                + Ajouter
+              </button>
+            </div>
+            {heirs.map((h, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px 40px", gap: 8, marginBottom: 8 }}>
+                <input className="input" placeholder="Adresse wallet (0x...)" value={h.address} onChange={e => updateHeir(i, "address", e.target.value)} />
+                <input className="input" placeholder="Nom" value={h.name} onChange={e => updateHeir(i, "name", e.target.value)} />
+                <input className="input" placeholder="%" type="number" value={h.share} onChange={e => updateHeir(i, "share", e.target.value)} />
+                <button className="btn-danger" style={{ padding: "8px" }} onClick={() => removeHeir(i)}>✕</button>
+              </div>
+            ))}
+          </div>
+
+          <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? <><span className="spinner" /> Dépôt en cours...</> : "Déposer sur la blockchain"}
+          </button>
         </div>
-      ) : testaments.length === 0 ? (
-        <div className="nr-card nr-card-hover p-6 text-gray-300">
-          Aucun testament pour le moment. Cliquez sur “Créer un testament”.
+      )}
+
+      {testaments.length === 0 ? (
+        <div className="card" style={{ textAlign: "center", padding: 48 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 15 }}>Aucun testament déposé pour l'instant.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {testaments.map((t) => (
-            <div key={t._id} className="space-y-3 nr-fade-in-up">
-              <TestamentCard testament={t} />
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/testament/${t._id}`)}
-                  className="nr-btn-secondary"
-                >
-                  👁 Voir détails
-                </button>
-
-                {t.status === "draft" ? (
-                  <button
-                    type="button"
-                    onClick={() => soumettreAuNotaire(t)}
-                    className="px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 transition font-semibold shadow-lg shadow-yellow-950/40"
-                  >
-                    📤 Soumettre au notaire
-                  </button>
-                ) : null}
-
-                {t.ipfsCid && t.documentHash ? (
-                  <button
-                    type="button"
-                    onClick={() => enregistrerBlockchain(t)}
-                    className="nr-btn-primary"
-                  >
-                    🔗 Enregistrer sur blockchain
-                  </button>
+        <div style={{ display: "grid", gap: 16 }}>
+          {testaments.map((t, i) => {
+            const s = STATUS_LABEL[Number(t.status)] || STATUS_LABEL[1];
+            return (
+              <div key={i} className="card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
+                      Testament #{String(t.id)}
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                      Notaire: {String(t.assignedNotary).slice(0,6)}...{String(t.assignedNotary).slice(-4)}
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 500,
+                    background: s.color + "22", border: `1px solid ${s.color}`, color: s.color
+                  }}>
+                    {s.label}
+                  </span>
+                </div>
+                {t.rejectionReason ? (
+                  <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--danger-dim)", borderRadius: 8, fontSize: 13, color: "var(--danger)" }}>
+                    Raison du rejet: {t.rejectionReason}
+                  </div>
                 ) : null}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-

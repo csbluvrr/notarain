@@ -1,51 +1,21 @@
-const mongoose = require("mongoose");
+const testaments = new Map();
+let nextId = 1;
 
-const TestamentSchema = new mongoose.Schema({
-  testatorWallet: {
-    type: String,
-    required: true,
-    lowercase: true,
-    trim: true
+const Testament = {
+  async create(data) {
+    const id = String(nextId++);
+    const doc = { ...data, _id: id };
+    testaments.set(id, doc);
+    return doc;
   },
-  ipfsCid: {
-    type: String
+  async findById(id) {
+    return testaments.get(String(id)) || null;
   },
-  documentHash: {
-    type: String
-  },
-  blockchainId: {
-    type: Number
-  },
-  status: {
-    type: String,
-    enum: ["draft", "pending", "approved", "rejected", "executed"],
-    default: "draft"
-  },
-  notaryWallet: {
-    type: String
-  },
-  originalFileName: {
-    type: String
-  },
-  heirs: {
-    type: [
-      {
-        walletAddress: { type: String, lowercase: true, trim: true },
-        name: { type: String, trim: true },
-        share: { type: String, trim: true }
-      }
-    ],
-    default: []
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  async find({ testatorWallet }) {
+    return [...testaments.values()]
+      .filter(t => t.testatorWallet === testatorWallet)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
-});
+};
 
-module.exports = mongoose.model("Testament", TestamentSchema);
-
+module.exports = Testament;
