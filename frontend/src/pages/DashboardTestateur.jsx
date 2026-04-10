@@ -1,3 +1,5 @@
+import { uploadToPinata } from "../services/pinata";
+import { encryptFile } from "../services/encryption";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
@@ -17,8 +19,6 @@ export default function DashboardTestateur() {
   const [notaries, setNotaries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-
-  // Form state
   const [selectedNotary, setSelectedNotary] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
   const [heirs, setHeirs] = useState([{ address: "", name: "", share: "" }]);
@@ -30,19 +30,22 @@ export default function DashboardTestateur() {
     try {
       setLoading(true);
       const c = await getContract();
-
-      // Charger notaires
       const notaryAddrs = await c.getNotaries();
       const notaryInfos = await Promise.all(notaryAddrs.map(a => c.getNotaryInfo(a)));
       setNotaries(notaryInfos.filter(n => n.isActive).map((n, i) => ({
         address: notaryAddrs[i],
         name: n.name,
       })));
-
-      // Charger testaments
       const ids = await c.getTestatorTestaments(user.walletAddress);
       const tests = await Promise.all(ids.map(id => c.getTestament(id)));
-      setTestaments(tests.map((t, i) => ({ ...t, id: ids[i] })));
+      setTestaments(tests.map((t, i) => ({
+        id: ids[i],
+        testator: t[1],
+        assignedNotary: t[2],
+        ipfsCid: t[3],
+        status: Number(t[5]),
+        rejectionReason: t[9],
+      })));
     } catch (e) {
       toast.error("Erreur chargement: " + e.message);
     } finally {
@@ -59,18 +62,32 @@ export default function DashboardTestateur() {
 
     try {
       setSubmitting(true);
-      // Hash du PDF
-      const buffer = await pdfFile.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+
+      // 1. Récupérer clé publique du notaire
+      toast("Récupération clé notaire...", { icon: "🔑" });
+      const c = await getContract();
+      const notaryInfo = await c.getNotaryInfo(selectedNotary);
+      const notaryPublicKey = notaryInfo.publicKey;
+
+      // 2. Hash du PDF original
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = "0x" + hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-      // Pour l'instant on met un CID factice (sans Pinata)
-      const fakeCid = "ipfs_" + Date.now();
+      // 3. Chiffrer avec clé publique notaire
+      toast("Chiffrement en cours...", { icon: "🔐" });
+      const encryptedFile = await encryptFile(pdfFile, notaryPublicKey);
 
-      const c = await getContract(true);
-      const tx = await c.createTestament(
-        fakeCid,
+      // 4. Upload fichier chiffré sur IPFS
+      toast("Upload sur IPFS...", { icon: "⏳" });
+      const cid = await uploadToPinata(encryptedFile);
+      toast.success("Testament chiffré et uploadé sur IPFS !");
+
+      // 5. Stocker CID + hash sur blockchain
+      const contract = await getContract(true);
+      const tx = await contract.createTestament(
+        cid,
         hashHex,
         selectedNotary,
         heirs.map(h => h.address),
@@ -78,7 +95,7 @@ export default function DashboardTestateur() {
         heirs.map(h => Number(h.share))
       );
       await tx.wait();
-      toast.success("Testament déposé avec succès !");
+      toast.success("Testament déposé sur la blockchain !");
       setShowForm(false);
       setPdfFile(null);
       setHeirs([{ address: "", name: "", share: "" }]);
@@ -91,19 +108,9 @@ export default function DashboardTestateur() {
     }
   }
 
-  function addHeir() {
-    setHeirs([...heirs, { address: "", name: "", share: "" }]);
-  }
-
-  function removeHeir(i) {
-    setHeirs(heirs.filter((_, idx) => idx !== i));
-  }
-
-  function updateHeir(i, field, val) {
-    const updated = [...heirs];
-    updated[i][field] = val;
-    setHeirs(updated);
-  }
+  function addHeir() { setHeirs([...heirs, { address: "", name: "", share: "" }]); }
+  function removeHeir(i) { setHeirs(heirs.filter((_, idx) => idx !== i)); }
+  function updateHeir(i, field, val) { const u = [...heirs]; u[i][field] = val; setHeirs(u); }
 
   if (loading) return (
     <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}>
@@ -128,14 +135,8 @@ export default function DashboardTestateur() {
           <h2 style={{ fontSize: 22, marginBottom: 24 }}>Nouveau Testament</h2>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-              Notaire assigné
-            </label>
-            <select
-              className="input"
-              value={selectedNotary}
-              onChange={e => setSelectedNotary(e.target.value)}
-            >
+            <label style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>Notaire assigné</label>
+            <select className="input" value={selectedNotary} onChange={e => setSelectedNotary(e.target.value)}>
               <option value="">-- Choisir un notaire --</option>
               {notaries.map(n => (
                 <option key={n.address} value={n.address}>{n.name} ({n.address.slice(0,6)}...{n.address.slice(-4)})</option>
@@ -144,24 +145,14 @@ export default function DashboardTestateur() {
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>
-              Fichier Testament (PDF)
-            </label>
-            <input
-              type="file"
-              accept=".pdf"
-              className="input"
-              onChange={e => setPdfFile(e.target.files[0])}
-              style={{ padding: "10px 16px" }}
-            />
+            <label style={{ fontSize: 13, color: "var(--text-secondary)", display: "block", marginBottom: 6 }}>Fichier Testament (PDF)</label>
+            <input type="file" accept=".pdf" className="input" onChange={e => setPdfFile(e.target.files[0])} style={{ padding: "10px 16px" }} />
           </div>
 
           <div style={{ marginBottom: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <label style={{ fontSize: 13, color: "var(--text-secondary)" }}>Héritiers</label>
-              <button className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={addHeir}>
-                + Ajouter
-              </button>
+              <button className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={addHeir}>+ Ajouter</button>
             </div>
             {heirs.map((h, i) => (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px 40px", gap: 8, marginBottom: 8 }}>
@@ -191,9 +182,7 @@ export default function DashboardTestateur() {
               <div key={i} className="card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-                      Testament #{String(t.id)}
-                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>Testament #{String(t.id)}</div>
                     <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                       Notaire: {String(t.assignedNotary).slice(0,6)}...{String(t.assignedNotary).slice(-4)}
                     </div>

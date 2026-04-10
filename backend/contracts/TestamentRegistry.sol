@@ -36,14 +36,13 @@ contract TestamentRegistry {
         bool exists;
     }
 
-struct Heir {
-    address walletAddress;
-    string name;
-    uint256 sharePercent;
-    string encryptedCid;
-    bool canAccess;
-    string publicKey;
-}
+    struct Heir {
+        address walletAddress;
+        string name;
+        uint256 sharePercent;
+        string encryptedCid;
+        bool canAccess;
+    }
 
     struct NotaryInfo {
         address walletAddress;
@@ -74,7 +73,7 @@ struct Heir {
     mapping(address => uint256[]) public testatorTestaments;
     mapping(address => uint256[]) public heirTestaments;
     mapping(address => uint256[]) public notaryTestaments;
-    mapping(address => string) public heirPublicKeys;
+
     // ============ EVENTS ============
     event UserRegistered(address indexed wallet, Role role, string name);
     event NotaryAdded(address indexed notary, string name);
@@ -146,9 +145,7 @@ struct Heir {
         notaryList.push(notaryAddr);
         emit NotaryAdded(notaryAddr, name);
     }
-    function getHeirPublicKey(address heir) external view returns (string memory) {
-    return heirPublicKeys[heir];
-}
+
     function removeNotary(address notaryAddr) external onlyAdmin {
         require(notaries[notaryAddr].isActive, "Not a notary");
         notaries[notaryAddr].isActive = false;
@@ -187,17 +184,17 @@ struct Heir {
         emit UserRegistered(msg.sender, Role.Testator, name);
     }
 
-   function registerHeir(string memory name, string memory publicKey) external {
-    require(!users[msg.sender].exists, "Already registered");
-    users[msg.sender] = UserInfo({
-        role: Role.Heir,
-        name: name,
-        civilStatus: "",
-        exists: true
-    });
-    heirPublicKeys[msg.sender] = publicKey;
-    emit UserRegistered(msg.sender, Role.Heir, name);
-}
+    function registerHeir(string memory name) external {
+        require(!users[msg.sender].exists, "Already registered");
+        users[msg.sender] = UserInfo({
+            role: Role.Heir,
+            name: name,
+            civilStatus: "",
+            exists: true
+        });
+        emit UserRegistered(msg.sender, Role.Heir, name);
+    }
+
     // ============ TESTAMENT FUNCTIONS ============
     function createTestament(
         string memory ipfsCid,
@@ -227,14 +224,13 @@ struct Heir {
         });
 
         for (uint256 i = 0; i < heirAddresses.length; i++) {
-       testamentHeirs[id].push(Heir({
-    walletAddress: heirAddresses[i],
-    name: heirNames[i],
-    sharePercent: heirShares[i],
-    encryptedCid: "",
-    canAccess: false,
-    publicKey: heirPublicKeys[heirAddresses[i]]
-}));
+            testamentHeirs[id].push(Heir({
+                walletAddress: heirAddresses[i],
+                name: heirNames[i],
+                sharePercent: heirShares[i],
+                encryptedCid: "",
+                canAccess: false
+            }));
             heirTestaments[heirAddresses[i]].push(id);
         }
 

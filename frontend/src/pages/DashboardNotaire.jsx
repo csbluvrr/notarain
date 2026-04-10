@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
+import { decryptFileFromJson, encryptFile } from "../services/encryption";
+import { uploadToPinata } from "../services/pinata";
 
 const STATUS_LABEL = {
   0: { label: "Brouillon", color: "var(--text-muted)" },
@@ -50,6 +52,21 @@ export default function DashboardNotaire() {
     }
   }
 
+  async function decryptAndView(ipfsCid) {
+    try {
+      toast("Récupération depuis IPFS...", { icon: "⏳" });
+      const res = await fetch(`https://gateway.pinata.cloud/ipfs/${ipfsCid}`);
+      const encryptedJson = await res.json();
+      toast("Déchiffrement en cours...", { icon: "🔐" });
+      const pdfBlob = await decryptFileFromJson(encryptedJson);
+      const url = URL.createObjectURL(pdfBlob);
+      window.open(url, "_blank");
+      toast.success("Testament déchiffré !");
+    } catch (e) {
+      toast.error("Erreur déchiffrement: " + e.message);
+    }
+  }
+
   async function approve(id) {
     try {
       setProcessing(p => ({ ...p, [id]: true }));
@@ -85,12 +102,31 @@ export default function DashboardNotaire() {
   async function confirmDeath(id) {
     try {
       setProcessing(p => ({ ...p, [id]: true }));
-      const count = heirCounts[id.toString()] || 1;
-      const fakeCids = Array(count).fill("ipfs_heir_" + Date.now());
-      const c = await getContract(true);
-      const tx = await c.confirmDeath(id, fakeCids);
+      toast("Récupération testament...", { icon: "⏳" });
+      
+      const testament = testaments.find(t => t.id === id);
+      const res = await fetch(`https://gateway.pinata.cloud/ipfs/${testament.ipfsCid}`);
+      const encryptedJson = await res.json();
+
+      toast("Déchiffrement Notaire...", { icon: "🔐" });
+      const pdfBlob = await decryptFileFromJson(encryptedJson);
+      const pdfFile = new File([pdfBlob], "testament.pdf");
+
+      toast("Rechiffrement pour les héritiers...", { icon: "🔑" });
+      const c = await getContract();
+      const heirs = await c.getTestamentHeirs(id);
+
+      const encryptedCids = await Promise.all(heirs.map(async (heir) => {
+        const heirPubKey = await c.getHeirPublicKey(heir.walletAddress);
+        if (!heirPubKey) return "no_key_found";
+        const encryptedForHeir = await encryptFile(pdfFile, heirPubKey);
+        return await uploadToPinata(encryptedForHeir);
+      }));
+
+      const contract = await getContract(true);
+      const tx = await contract.confirmDeath(id, encryptedCids);
       await tx.wait();
-      toast.success("Décès confirmé — testament exécuté !");
+      toast.success("Décès confirmé — accès transmis !");
       loadData();
     } catch (e) {
       toast.error("Erreur: " + (e.reason || e.message));
@@ -99,16 +135,12 @@ export default function DashboardNotaire() {
     }
   }
 
-  if (loading) return (
-    <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}>
-      <span className="spinner" style={{ width: 32, height: 32 }} />
-    </div>
-  );
+  if (loading) return <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}><span className="spinner" /></div>;
 
   return (
     <div className="page-container">
       <h1 className="page-title">Espace Notaire</h1>
-      <p className="page-subtitle">Gérez les testaments qui vous sont assignés</p>
+      <p className="page-subtitle">Gérez les testaments assignés</p>
 
       {testaments.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: 48 }}>
@@ -123,43 +155,28 @@ export default function DashboardNotaire() {
               <div key={i} className="card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-                      Testament #{id.toString()}
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                      Testateur: {String(t.testator).slice(0,6)}...{String(t.testator).slice(-4)}
-                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Testament #{id.toString()}</div>
+                    <div style={{ fontSize: 13 }}>Testateur: {String(t.testator).slice(0,6)}...{String(t.testator).slice(-4)}</div>
                   </div>
-                  <span style={{
-                    padding: "5px 12px", borderRadius: 999, fontSize: 12,
-                    background: s.color + "22", border: `1px solid ${s.color}`, color: s.color
-                  }}>
-                    {s.label}
-                  </span>
+                  <span style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, background: s.color + "22", border: `1px solid ${s.color}`, color: s.color }}>{s.label}</span>
                 </div>
+
+                {t.ipfsCid && !t.ipfsCid.startsWith("ipfs_") && (
+                  <button className="btn-secondary" style={{ marginBottom: 12 }} onClick={() => decryptAndView(t.ipfsCid)}>
+                    🔓 Déchiffrer et lire
+                  </button>
+                )}
 
                 {t.status === 1 && (
                   <div style={{ display: "grid", gap: 10 }}>
-                    <button className="btn-approve" disabled={processing[id]} onClick={() => approve(id)}>
-                      {processing[id] ? <span className="spinner" /> : "✅ Approuver"}
-                    </button>
-                    <input
-                      className="input"
-                      placeholder="Raison du rejet..."
-                      value={rejectReason[id] || ""}
-                      onChange={e => setRejectReason(r => ({ ...r, [id]: e.target.value }))}
-                    />
-                    <button className="btn-danger" disabled={processing[id]} onClick={() => reject(id)}>
-                      {processing[id] ? <span className="spinner" /> : "❌ Rejeter"}
-                    </button>
+                    <button className="btn-approve" onClick={() => approve(id)}>✅ Approuver</button>
+                    <input className="input" placeholder="Raison rejet..." onChange={e => setRejectReason(r => ({ ...r, [id]: e.target.value }))} />
+                    <button className="btn-danger" onClick={() => reject(id)}>❌ Rejeter</button>
                   </div>
                 )}
 
                 {t.status === 4 && (
                   <div style={{ marginTop: 8 }}>
-                    <div style={{ padding: "10px 14px", background: "var(--info-dim)", borderRadius: 8, fontSize: 13, color: "var(--info)", marginBottom: 12 }}>
-                      ⚠️ Décès signalé — vérifiez le certificat
-                    </div>
                     <button className="btn-gold-action" disabled={processing[id]} onClick={() => confirmDeath(id)}>
                       {processing[id] ? <span className="spinner" /> : "✅ Confirmer le décès et exécuter"}
                     </button>

@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-
-const STATUS_LABEL = {
-  0: { label: "Brouillon", color: "var(--text-muted)" },
-  1: { label: "En attente", color: "var(--warning)" },
-  2: { label: "Approuvé", color: "var(--success)" },
-  3: { label: "Rejeté", color: "var(--danger)" },
-  4: { label: "Décès signalé", color: "var(--info)" },
-  5: { label: "Exécuté", color: "var(--accent)" },
-};
+import { decryptFileFromJson } from "../services/encryption";
 
 export default function DashboardBeneficiaire() {
   const { user, getContract } = useAuth();
@@ -25,13 +17,11 @@ export default function DashboardBeneficiaire() {
       setLoading(true);
       const c = await getContract();
       const ids = await c.getHeirTestaments(user.walletAddress);
-      console.log("heir testament ids:", ids);
       const tests = await Promise.all(ids.map(id => c.getTestament(id)));
       setTestaments(tests.map((t, i) => ({
         id: ids[i],
         testator: t[1],
         status: Number(t[5]),
-        deathCertificateCid: t[8],
       })));
     } catch (e) {
       toast.error("Erreur: " + e.message);
@@ -41,15 +31,14 @@ export default function DashboardBeneficiaire() {
   }
 
   async function reportDeath(id) {
-    const file = certFile[id];
-    if (!file) return toast.error("Ajoutez le certificat de décès");
+    if (!certFile[id]) return toast.error("Ajoutez le certificat de décès");
     try {
       setReporting(r => ({ ...r, [id]: true }));
       const fakeCid = "death_cert_" + Date.now();
       const c = await getContract(true);
       const tx = await c.reportDeath(id, fakeCid);
       await tx.wait();
-      toast.success("Décès signalé — le notaire va confirmer");
+      toast.success("Décès signalé !");
       loadData();
     } catch (e) {
       toast.error("Erreur: " + (e.reason || e.message));
@@ -58,72 +47,63 @@ export default function DashboardBeneficiaire() {
     }
   }
 
-  if (loading) return (
-    <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}>
-      <span className="spinner" style={{ width: 32, height: 32 }} />
-    </div>
-  );
+  async function decryptAndView(id) {
+    try {
+      toast("Récupération document...", { icon: "⏳" });
+      const c = await getContract();
+      const heirs = await c.getTestamentHeirs(id);
+      const myInfo = heirs.find(h => h.walletAddress.toLowerCase() === user.walletAddress.toLowerCase());
+      
+      if (!myInfo?.encryptedCid) return toast.error("Document non disponible");
+
+      const res = await fetch(`https://gateway.pinata.cloud/ipfs/${myInfo.encryptedCid}`);
+      const encryptedJson = await res.json();
+
+      toast("Déchiffrement personnel...", { icon: "🔐" });
+      const pdfBlob = await decryptFileFromJson(encryptedJson);
+      const url = URL.createObjectURL(pdfBlob);
+      window.open(url, "_blank");
+    } catch (e) {
+      toast.error("Erreur: " + e.message);
+    }
+  }
+
+  if (loading) return <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}><span className="spinner" /></div>;
 
   return (
     <div className="page-container">
       <h1 className="page-title">Espace Héritier</h1>
-      <p className="page-subtitle">Testaments dont vous êtes bénéficiaire</p>
+      <p className="page-subtitle">Vos droits successoraux</p>
 
       {testaments.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: 48 }}>
-          <p style={{ color: "var(--text-muted)" }}>Aucun testament disponible.</p>
+          <p>Aucun testament vous concernant.</p>
         </div>
       ) : (
         <div style={{ display: "grid", gap: 20 }}>
           {testaments.map((t, i) => {
-            const s = STATUS_LABEL[t.status] || STATUS_LABEL[2];
-            const id = t.id;
+            const status = t.status;
             return (
               <div key={i} className="card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-                      Testament #{id.toString()}
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                      Testateur: {String(t.testator).slice(0,6)}...{String(t.testator).slice(-4)}
-                    </div>
+                {status <= 2 && (
+                  <div style={{ padding: 15, background: "var(--accent-dim)", borderRadius: 10 }}>
+                    <div style={{ fontWeight: 600 }}>📜 Un testament vous concerne</div>
+                    <p style={{ fontSize: 12 }}>Il sera accessible après confirmation du décès.</p>
+                    {status === 2 && (
+                      <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                        <input type="file" accept=".pdf" onChange={e => setCertFile(f => ({ ...f, [t.id]: e.target.files[0] }))} />
+                        <button className="btn-gold-action" onClick={() => reportDeath(t.id)}>⚠️ Signaler Décès</button>
+                      </div>
+                    )}
                   </div>
-                  <span style={{
-                    padding: "5px 12px", borderRadius: 999, fontSize: 12,
-                    background: s.color + "22", border: `1px solid ${s.color}`, color: s.color
-                  }}>
-                    {s.label}
-                  </span>
-                </div>
+                )}
 
-                {t.status === 2 && (
+                {status === 4 && <div className="badge-info">⏳ Décès signalé - En attente Notaire</div>}
+
+                {status === 5 && (
                   <div style={{ display: "grid", gap: 10 }}>
-                    <div style={{ padding: "10px 14px", background: "var(--warning-dim)", borderRadius: 8, fontSize: 13, color: "var(--warning)" }}>
-                      Le testament est approuvé. Si le testateur est décédé, signalez le décès.
-                    </div>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      className="input"
-                      style={{ padding: "10px 16px" }}
-                      onChange={e => setCertFile(f => ({ ...f, [id]: e.target.files[0] }))}
-                    />
-                    <button className="btn-gold-action" disabled={reporting[id]} onClick={() => reportDeath(id)}>
-                      {reporting[id] ? <span className="spinner" /> : "⚠️ Signaler le décès"}
-                    </button>
-                  </div>
-                )}
-
-                {t.status === 4 && (
-                  <div style={{ padding: "10px 14px", background: "var(--info-dim)", borderRadius: 8, fontSize: 13, color: "var(--info)" }}>
-                    Décès signalé — en attente de confirmation du notaire...
-                  </div>
-                )}
-
-                {t.status === 5 && (
-                  <div style={{ padding: "10px 14px", background: "var(--success-dim)", borderRadius: 8, fontSize: 13, color: "var(--success)" }}>
-                    ✅ Testament exécuté — vous avez accès à l'héritage.
+                    <div className="badge-success">✅ Testament exécuté</div>
+                    <button className="btn-gold-action" onClick={() => decryptAndView(t.id)}>🔓 Déchiffrer mon testament</button>
                   </div>
                 )}
               </div>
