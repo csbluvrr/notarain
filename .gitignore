@@ -19,6 +19,9 @@ pnpm-debug.log*
 # Node dependencies
 node_modules/
 
+# Package-lock
+package-lock.json
+
 # Vite / React build output
 frontend/dist/
 frontend/.vite/
@@ -32,8 +35,13 @@ blockchain/cache/
 blockchain/coverage/
 blockchain/coverage.json
 blockchain/typechain-types/
+blockchain/package-lock.json
 
 # Generated contract deployment outputs (written by deploy script)
 frontend/src/contracts/TestamentRegistry.json
-backend/contracts/TestamentRegistry.json
+frontend/package-lock.json
+frontend/node_modules/
 
+backend/contracts/TestamentRegistry.json
+backend/package-lock.json
+backend/node_modules/
