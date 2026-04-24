@@ -1,57 +1,49 @@
-// Chiffrement avec clé publique notaire (format MetaMask base64)
-export async function encryptFile(file, notaryPublicKeyBase64) {
+import nacl from "tweetnacl";
+import { decodeBase64, encodeBase64 } from "tweetnacl-util";
+
+// Chiffre un fichier avec la clé publique MetaMask (x25519-xsalsa20-poly1305)
+export async function encryptFileForAddress(file, publicKeyBase64) {
   const arrayBuffer = await file.arrayBuffer();
-  
-  // Convertir la clé publique base64 en CryptoKey
-  const pubKeyBytes = Uint8Array.from(atob(notaryPublicKeyBase64), c => c.charCodeAt(0));
-  
-  // Générer une clé AES aléatoire
-  const aesKey = await crypto.subtle.generateKey(
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
+  const uint8 = new Uint8Array(arrayBuffer);
+  const dataHex = Array.from(uint8)
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+
+  const recipientPublicKey = decodeBase64(publicKeyBase64);
+  const ephemeralKeyPair = nacl.box.keyPair();
+  const nonce = nacl.randomBytes(nacl.box.nonceLength);
+  const messageUint8 = new TextEncoder().encode(dataHex);
+
+  const encryptedMessage = nacl.box(
+    messageUint8,
+    nonce,
+    recipientPublicKey,
+    ephemeralKeyPair.secretKey
   );
-  
-  // Chiffrer le PDF avec AES
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encryptedData = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    aesKey,
-    arrayBuffer
-  );
-  
-  // Exporter la clé AES en raw
-  const rawAesKey = await crypto.subtle.exportKey("raw", aesKey);
-  
-  // Stocker tout ensemble
+
   const result = {
-    iv: Array.from(iv),
-    encryptedData: Array.from(new Uint8Array(encryptedData)),
-    aesKey: Array.from(new Uint8Array(rawAesKey)),
-    notaryPublicKey: notaryPublicKeyBase64
+    version: "x25519-xsalsa20-poly1305",
+    nonce: encodeBase64(nonce),
+    ephemPublicKey: encodeBase64(ephemeralKeyPair.publicKey),
+    ciphertext: encodeBase64(encryptedMessage),
   };
-  
+
   const blob = new Blob([JSON.stringify(result)], { type: "application/json" });
   return new File([blob], "testament_encrypted.json");
 }
 
-// Déchiffrer avec la clé AES stockée (le notaire la récupère via MetaMask)
-export async function decryptFileFromJson(encryptedJson) {
-  const { iv, encryptedData, aesKey } = encryptedJson;
-  
-  const aesKeyObj = await crypto.subtle.importKey(
-    "raw",
-    new Uint8Array(aesKey),
-    { name: "AES-GCM" },
-    false,
-    ["decrypt"]
+// Déchiffre via MetaMask eth_decrypt (clé privée reste dans MetaMask)
+export async function decryptWithMetaMask(encryptedObj, walletAddress) {
+  const encryptedStr = JSON.stringify(encryptedObj);
+  const encryptedHex = "0x" + Array.from(new TextEncoder().encode(encryptedStr))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+
+  const decryptedHex = await window.ethereum.request({
+    method: "eth_decrypt",
+    params: [encryptedHex, walletAddress],
+  });
+
+  const bytes = new Uint8Array(
+    decryptedHex.match(/.{1,2}/g).map(b => parseInt(b, 16))
   );
-  
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(iv) },
-    aesKeyObj,
-    new Uint8Array(encryptedData)
-  );
-  
-  return new Blob([decrypted], { type: "application/pdf" });
+  return new Blob([bytes], { type: "application/pdf" });
 }

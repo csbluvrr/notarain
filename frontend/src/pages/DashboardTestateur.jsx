@@ -1,5 +1,5 @@
 import { uploadToPinata } from "../services/pinata";
-import { encryptFile } from "../services/encryption";
+import { encryptFileForAddress } from "../services/encryption";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
@@ -77,7 +77,7 @@ export default function DashboardTestateur() {
 
       // 3. Chiffrer avec clé publique notaire
       toast("Chiffrement en cours...", { icon: "🔐" });
-      const encryptedFile = await encryptFile(pdfFile, notaryPublicKey);
+      const encryptedFile = await encryptFileForAddress(pdfFile, notaryPublicKey);
 
       // 4. Upload fichier chiffré sur IPFS
       toast("Upload sur IPFS...", { icon: "⏳" });

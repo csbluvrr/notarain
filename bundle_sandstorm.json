@@ -1,0 +1,194 @@
+{
+  "type": "bundle",
+  "id": "bundle--sandstorm-complet-2026",
+  "objects": [
+    {
+      "type": "threat-actor",
+      "spec_version": "2.1",
+      "id": "threat-actor--a1b2c3d4-0000-0000-0000-000000000002",
+      "name": "APT-Maghreb",
+      "threat_actor_types": ["nation-state"],
+      "description": "Groupe APT ciblant les infrastructures gouvernementales du Maghreb"
+    },
+    {
+      "type": "campaign",
+      "spec_version": "2.1",
+      "id": "campaign--a1b2c3d4-0000-0000-0000-000000000003",
+      "name": "Operation SandStorm",
+      "description": "Campagne de cyberespionnage ciblant les ministeres du Maghreb via phishing et exploitation de vulnerabilites",
+      "first_seen": "2026-01-01T00:00:00Z",
+      "last_seen": "2026-04-30T00:00:00Z"
+    },
+    {
+      "type": "incident",
+      "spec_version": "2.1",
+      "id": "incident--a1b2c3d4-0000-0000-0000-000000000010",
+      "name": "Intrusion SI Ministere",
+      "description": "Intrusion detectee sur le systeme d information d un ministere, exfiltration de donnees sensibles suspectee",
+      "first_seen": "2026-03-12T03:00:00Z",
+      "last_seen": "2026-03-12T03:00:00Z"
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000011",
+      "name": "T1566 - Phishing",
+      "description": "Envoi d emails cibles avec pieces jointes malveillantes vers les agents ministeriels",
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1566",
+          "url": "https://attack.mitre.org/techniques/T1566"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000012",
+      "name": "T1059.001 - PowerShell",
+      "description": "Execution de commandes PowerShell malveillantes pour persistance, lateral movement et exfiltration",
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1059.001",
+          "url": "https://attack.mitre.org/techniques/T1059/001"
+        }
+      ]
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--a1b2c3d4-0000-0000-0000-000000000004",
+      "name": "IP C2 APT-Maghreb",
+      "description": "Serveur C2 principal de APT-Maghreb",
+      "pattern": "[ipv4-addr:value = '185.234.219.47']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-01T00:00:00Z"
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--a1b2c3d4-0000-0000-0000-000000000005",
+      "name": "Domaine C2 APT-Maghreb",
+      "description": "Domaine utilise pour le C2 et l exfiltration de donnees",
+      "pattern": "[domain-name:value = 'update-service.maghreb-gov.net']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-01T00:00:00Z"
+    },
+    {
+      "type": "indicator",
+      "spec_version": "2.1",
+      "id": "indicator--a1b2c3d4-0000-0000-0000-000000000006",
+      "name": "Malware Hash APT-Maghreb",
+      "description": "Hash SHA-256 du dropper malware deploye post-compromission",
+      "pattern": "[file:hashes.'SHA-256' = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-01T00:00:00Z"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000001",
+      "relationship_type": "attributed-to",
+      "source_ref": "campaign--a1b2c3d4-0000-0000-0000-000000000003",
+      "target_ref": "threat-actor--a1b2c3d4-0000-0000-0000-000000000002"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000002",
+      "relationship_type": "uses",
+      "source_ref": "campaign--a1b2c3d4-0000-0000-0000-000000000003",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000011"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000003",
+      "relationship_type": "uses",
+      "source_ref": "campaign--a1b2c3d4-0000-0000-0000-000000000003",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000012"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000004",
+      "relationship_type": "uses",
+      "source_ref": "threat-actor--a1b2c3d4-0000-0000-0000-000000000002",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000011"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000005",
+      "relationship_type": "uses",
+      "source_ref": "threat-actor--a1b2c3d4-0000-0000-0000-000000000002",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000012"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000006",
+      "relationship_type": "related-to",
+      "source_ref": "campaign--a1b2c3d4-0000-0000-0000-000000000003",
+      "target_ref": "incident--a1b2c3d4-0000-0000-0000-000000000010"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000007",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--a1b2c3d4-0000-0000-0000-000000000004",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000011"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000008",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--a1b2c3d4-0000-0000-0000-000000000005",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000011"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000009",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--a1b2c3d4-0000-0000-0000-000000000006",
+      "target_ref": "attack-pattern--a1b2c3d4-0000-0000-0000-000000000012"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000010",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--a1b2c3d4-0000-0000-0000-000000000004",
+      "target_ref": "incident--a1b2c3d4-0000-0000-0000-000000000010"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000011",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--a1b2c3d4-0000-0000-0000-000000000005",
+      "target_ref": "incident--a1b2c3d4-0000-0000-0000-000000000010"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000012",
+      "relationship_type": "related-to",
+      "source_ref": "indicator--a1b2c3d4-0000-0000-0000-000000000006",
+      "target_ref": "incident--a1b2c3d4-0000-0000-0000-000000000010"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--0000-0001-0000-0000-000000000013",
+      "relationship_type": "related-to",
+      "source_ref": "threat-actor--a1b2c3d4-0000-0000-0000-000000000002",
+      "target_ref": "incident--a1b2c3d4-0000-0000-0000-000000000010"
+    }
+  ]
+}
