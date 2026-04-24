@@ -5,7 +5,9 @@ const path = require("path");
 async function main() {
   const [admin, notary, heir] = await hre.ethers.getSigners();
 
-  const TestamentRegistry = await hre.ethers.getContractFactory("TestamentRegistry");
+  const TestamentRegistry = await hre.ethers.getContractFactory(
+    "TestamentRegistry"
+  );
   const contract = await TestamentRegistry.deploy("Admin Notarain");
   await contract.waitForDeployment();
   const address = await contract.getAddress();
@@ -24,11 +26,22 @@ async function main() {
   // On laisse le testateur s'enregistrer lui-même via l'UI
 
   // Génère ABI
-  const artifactPath = path.join(__dirname, "../artifacts/contracts/TestamentRegistry.sol/TestamentRegistry.json");
+  const artifactPath = path.join(
+    __dirname,
+    "../artifacts/contracts/TestamentRegistry.sol/TestamentRegistry.json"
+  );
   const artifact = JSON.parse(fs.readFileSync(artifactPath));
   const output = { address, abi: artifact.abi };
-  const outputPath = path.join(__dirname, "../../frontend/src/contracts/TestamentRegistry.json");
-  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  const outputPathFront = path.join(
+    __dirname,
+    "../../frontend/src/contracts/TestamentRegistry.json"
+  );
+  const outputPathBack = path.join(
+    __dirname,
+    "../../backend/src/contracts/TestamentRegistry.json"
+  );
+  fs.writeFileSync(outputPathFront, JSON.stringify(output, null, 2));
+  fs.writeFileSync(outputPathBack, JSON.stringify(output, null, 2));
   console.log("ABI generated!");
 
   // Met à jour .env
@@ -39,7 +52,10 @@ async function main() {
 
   const frontenvPath = path.join(__dirname, "../../frontend/.env");
   let frontenv = fs.readFileSync(frontenvPath, "utf8");
-  frontenv = frontenv.replace(/VITE_CONTRACT_ADDRESS=.*/, `VITE_CONTRACT_ADDRESS=${address}`);
+  frontenv = frontenv.replace(
+    /VITE_CONTRACT_ADDRESS=.*/,
+    `VITE_CONTRACT_ADDRESS=${address}`
+  );
   fs.writeFileSync(frontenvPath, frontenv);
   console.log("ENV files updated!");
 
@@ -53,3 +69,4 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+

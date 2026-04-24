@@ -16,6 +16,7 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
     "dotenv": "^17.4.1"
   }
 }
