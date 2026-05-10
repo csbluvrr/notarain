@@ -10,19 +10,23 @@ export default function DashboardBeneficiaire() {
   const [reporting, setReporting] = useState({});
   const [certFile, setCertFile] = useState({});
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   async function loadData() {
     try {
       setLoading(true);
       const c = await getContract();
       const ids = await c.getHeirTestaments(user.walletAddress);
-      const tests = await Promise.all(ids.map(id => c.getTestament(id)));
-      setTestaments(tests.map((t, i) => ({
-        id: ids[i],
-        testator: t[1],
-        status: Number(t[5]),
-      })));
+      const tests = await Promise.all(ids.map((id) => c.getTestament(id)));
+      setTestaments(
+        tests.map((t, i) => ({
+          id: ids[i],
+          testator: t[1],
+          status: Number(t[5]),
+        }))
+      );
     } catch (e) {
       toast.error("Erreur: " + e.message);
     } finally {
@@ -33,7 +37,7 @@ export default function DashboardBeneficiaire() {
   async function reportDeath(id) {
     if (!certFile[id]) return toast.error("Ajoutez le certificat de décès");
     try {
-      setReporting(r => ({ ...r, [id]: true }));
+      setReporting((r) => ({ ...r, [id]: true }));
       const fakeCid = "death_cert_" + Date.now();
       const c = await getContract(true);
       const tx = await c.reportDeath(id, fakeCid);
@@ -43,7 +47,7 @@ export default function DashboardBeneficiaire() {
     } catch (e) {
       toast.error("Erreur: " + (e.reason || e.message));
     } finally {
-      setReporting(r => ({ ...r, [id]: false }));
+      setReporting((r) => ({ ...r, [id]: false }));
     }
   }
 
@@ -52,11 +56,16 @@ export default function DashboardBeneficiaire() {
       toast("Récupération document...", { icon: "⏳" });
       const c = await getContract();
       const heirs = await c.getTestamentHeirs(id);
-      const myInfo = heirs.find(h => h.walletAddress.toLowerCase() === user.walletAddress.toLowerCase());
-      
+      const myInfo = heirs.find(
+        (h) =>
+          h.walletAddress.toLowerCase() === user.walletAddress.toLowerCase()
+      );
+
       if (!myInfo?.encryptedCid) return toast.error("Document non disponible");
 
-      const res = await fetch(`https://gateway.pinata.cloud/ipfs/${myInfo.encryptedCid}`);
+      const res = await fetch(
+        `https://gateway.pinata.cloud/ipfs/${myInfo.encryptedCid}`
+      );
       const encryptedJson = await res.json();
 
       toast("Déchiffrement personnel...", { icon: "🔐" });
@@ -68,7 +77,15 @@ export default function DashboardBeneficiaire() {
     }
   }
 
-  if (loading) return <div className="page-container" style={{ textAlign: "center", paddingTop: 120 }}><span className="spinner" /></div>;
+  if (loading)
+    return (
+      <div
+        className="page-container"
+        style={{ textAlign: "center", paddingTop: 120 }}
+      >
+        <span className="spinner" />
+      </div>
+    );
 
   return (
     <div className="page-container">
@@ -86,24 +103,57 @@ export default function DashboardBeneficiaire() {
             return (
               <div key={i} className="card">
                 {status <= 2 && (
-                  <div style={{ padding: 15, background: "var(--accent-dim)", borderRadius: 10 }}>
-                    <div style={{ fontWeight: 600 }}>📜 Un testament vous concerne</div>
-                    <p style={{ fontSize: 12 }}>Il sera accessible après confirmation du décès.</p>
+                  <div
+                    style={{
+                      padding: 15,
+                      background: "var(--accent-dim)",
+                      borderRadius: 10,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>
+                      📜 Un testament vous concerne
+                    </div>
+                    <p style={{ fontSize: 12 }}>
+                      Il sera accessible après confirmation du décès.
+                    </p>
                     {status === 2 && (
                       <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                        <input type="file" accept=".pdf" onChange={e => setCertFile(f => ({ ...f, [t.id]: e.target.files[0] }))} />
-                        <button className="btn-gold-action" onClick={() => reportDeath(t.id)}>⚠️ Signaler Décès</button>
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) =>
+                            setCertFile((f) => ({
+                              ...f,
+                              [t.id]: e.target.files[0],
+                            }))
+                          }
+                        />
+                        <button
+                          className="btn-gold-action"
+                          onClick={() => reportDeath(t.id)}
+                        >
+                          ⚠️ Signaler Décès
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
 
-                {status === 4 && <div className="badge-info">⏳ Décès signalé - En attente Notaire</div>}
+                {status === 4 && (
+                  <div className="badge-info">
+                    ⏳ Décès signalé - En attente Notaire
+                  </div>
+                )}
 
                 {status === 5 && (
                   <div style={{ display: "grid", gap: 10 }}>
                     <div className="badge-success">✅ Testament exécuté</div>
-                    <button className="btn-gold-action" onClick={() => decryptAndView(t.id)}>🔓 Déchiffrer mon testament</button>
+                    <button
+                      className="btn-gold-action"
+                      onClick={() => decryptAndView(t.id)}
+                    >
+                      🔓 Déchiffrer mon testament
+                    </button>
                   </div>
                 )}
               </div>
@@ -114,3 +164,4 @@ export default function DashboardBeneficiaire() {
     </div>
   );
 }
+
