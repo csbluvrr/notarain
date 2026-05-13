@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { decryptFileFromJson, encryptFile } from "../services/encryption";
+import {
+  decryptWithMetaMask,
+  encryptFileForAddress,
+} from "../services/encryption";
 import { uploadToPinata } from "../services/pinata";
 
 const STATUS_LABEL = {
@@ -62,7 +65,10 @@ export default function DashboardNotaire() {
       const res = await fetch(`https://gateway.pinata.cloud/ipfs/${ipfsCid}`);
       const encryptedJson = await res.json();
       toast("Déchiffrement en cours...", { icon: "🔐" });
-      const pdfBlob = await decryptFileFromJson(encryptedJson);
+      const pdfBlob = await decryptWithMetaMask(
+        encryptedJson,
+        user.walletAddress
+      );
       const url = URL.createObjectURL(pdfBlob);
       window.open(url, "_blank");
       toast.success("Testament déchiffré !");
@@ -115,7 +121,10 @@ export default function DashboardNotaire() {
       const encryptedJson = await res.json();
 
       toast("Déchiffrement Notaire...", { icon: "🔐" });
-      const pdfBlob = await decryptFileFromJson(encryptedJson);
+      const pdfBlob = await decryptWithMetaMask(
+        encryptedJson,
+        user.walletAddress
+      );
       const pdfFile = new File([pdfBlob], "testament.pdf");
 
       toast("Rechiffrement pour les héritiers...", { icon: "🔑" });
@@ -126,7 +135,10 @@ export default function DashboardNotaire() {
         heirs.map(async (heir) => {
           const heirPubKey = await c.getHeirPublicKey(heir.walletAddress);
           if (!heirPubKey) return "no_key_found";
-          const encryptedForHeir = await encryptFile(pdfFile, heirPubKey);
+          const encryptedForHeir = await encryptFileForAddress(
+            pdfFile,
+            heirPubKey
+          );
           return await uploadToPinata(encryptedForHeir);
         })
       );
@@ -251,4 +263,3 @@ export default function DashboardNotaire() {
     </div>
   );
 }
-

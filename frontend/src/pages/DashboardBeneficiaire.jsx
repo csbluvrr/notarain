@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { decryptFileFromJson } from "../services/encryption";
-
+import { decryptWithMetaMask } from "../services/encryption";
 export default function DashboardBeneficiaire() {
   const { user, getContract } = useAuth();
   const [testaments, setTestaments] = useState([]);
@@ -69,7 +68,10 @@ export default function DashboardBeneficiaire() {
       const encryptedJson = await res.json();
 
       toast("Déchiffrement personnel...", { icon: "🔐" });
-      const pdfBlob = await decryptFileFromJson(encryptedJson);
+      const pdfBlob = await decryptWithMetaMask(
+        encryptedJson,
+        user.walletAddress
+      );
       const url = URL.createObjectURL(pdfBlob);
       window.open(url, "_blank");
     } catch (e) {
@@ -164,4 +166,3 @@ export default function DashboardBeneficiaire() {
     </div>
   );
 }
-

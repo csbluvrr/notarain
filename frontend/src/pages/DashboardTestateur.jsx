@@ -1,5 +1,5 @@
 import { uploadToPinata } from "../services/pinata";
-import { encryptFile } from "../services/encryption";
+import { encryptFileForAddress } from "../services/encryption";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
@@ -63,6 +63,24 @@ export default function DashboardTestateur() {
     }
   }
 
+  // In your frontend, when adding a notary
+  async function getCorrectEncryptionPublicKey() {
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts",
+    });
+
+    // This returns the CORRECT X25519 public key in base64 format
+    const encryptionPublicKey = await window.ethereum.request({
+      method: "eth_getEncryptionPublicKey",
+      params: [accounts[0]],
+    });
+
+    console.log("X25519 public key (base64):", encryptionPublicKey);
+    // Example output: "3a3uqM3sfbX9qK5BhHgA9l7ZpHLMPH/zwgCgUEXeY1Q="
+
+    return encryptionPublicKey;
+  }
+
   async function handleSubmit() {
     if (!selectedNotary) return toast.error("Choisissez un notaire");
     if (!pdfFile) return toast.error("Ajoutez un fichier PDF");
@@ -79,7 +97,9 @@ export default function DashboardTestateur() {
       toast("Récupération clé notaire...", { icon: "🔑" });
       const c = await getContract();
       const notaryInfo = await c.getNotaryInfo(selectedNotary);
+      // const notaryPublicKey = getCorrectEncryptionPublicKey();
       const notaryPublicKey = notaryInfo.publicKey;
+      toast("notaryPublicKey : " + notaryPublicKey);
 
       // 2. Hash du PDF original
       const arrayBuffer = await pdfFile.arrayBuffer();
@@ -90,7 +110,10 @@ export default function DashboardTestateur() {
 
       // 3. Chiffrer avec clé publique notaire
       toast("Chiffrement en cours...", { icon: "🔐" });
-      const encryptedFile = await encryptFile(pdfFile, notaryPublicKey);
+      const encryptedFile = await encryptFileForAddress(
+        pdfFile,
+        notaryPublicKey
+      );
 
       // 4. Upload fichier chiffré sur IPFS
       toast("Upload sur IPFS...", { icon: "⏳" });
@@ -364,4 +387,3 @@ export default function DashboardTestateur() {
     </div>
   );
 }
-

@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
-  const [admin, notary, heir] = await hre.ethers.getSigners();
+  const [admin, notary, heir, testator] = await hre.ethers.getSigners();
 
   const TestamentRegistry = await hre.ethers.getContractFactory(
     "TestamentRegistry"
@@ -16,13 +16,20 @@ async function main() {
   // Ajoute le notaire automatiquement
   await contract.addNotary(
     notary.address,
-    "Notaire Test",
+    "Notaire 1",
     "0x04notaire_public_key"
   );
   console.log("Notaire ajouté:", notary.address);
 
-  // Enregistre le testateur (Account #2)
-  const testatorContract = contract.connect(heir);
+  // Enregistre le testator
+  const testatorContract = contract.connect(testator);
+  await testatorContract.registerTestator("testator 1", "alive");
+  console.log("✓ Testator ajouté:", testator.address);
+
+  // Enregistre le Hair
+  const heirContract = contract.connect(heir);
+  await heirContract.registerHeir("Heir Name", "0xheir_public_key");
+  console.log("✓ Heir ajouté:", heir.address);
   // On laisse le testateur s'enregistrer lui-même via l'UI
 
   // Génère ABI
@@ -63,10 +70,10 @@ async function main() {
   console.log("Admin:    ", admin.address);
   console.log("Notaire:  ", notary.address);
   console.log("Heir:     ", heir.address);
+  console.log("Testator: ", testator.address);
 }
 
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
