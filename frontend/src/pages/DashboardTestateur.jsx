@@ -63,24 +63,6 @@ export default function DashboardTestateur() {
     }
   }
 
-  // In your frontend, when adding a notary
-  async function getCorrectEncryptionPublicKey() {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-
-    // This returns the CORRECT X25519 public key in base64 format
-    const encryptionPublicKey = await window.ethereum.request({
-      method: "eth_getEncryptionPublicKey",
-      params: [accounts[0]],
-    });
-
-    console.log("X25519 public key (base64):", encryptionPublicKey);
-    // Example output: "3a3uqM3sfbX9qK5BhHgA9l7ZpHLMPH/zwgCgUEXeY1Q="
-
-    return encryptionPublicKey;
-  }
-
   async function handleSubmit() {
     if (!selectedNotary) return toast.error("Choisissez un notaire");
     if (!pdfFile) return toast.error("Ajoutez un fichier PDF");

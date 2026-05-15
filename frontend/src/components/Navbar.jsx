@@ -55,6 +55,9 @@ export default function Navbar() {
   const onLogout = async () => {
     try {
       await logout();
+      if (localStorage.getItem("notaryKeys") !== null) {
+        localStorage.removeItem("notaryKeys");
+      }
       toast.success("Déconnecté");
       navigate("/");
     } catch {

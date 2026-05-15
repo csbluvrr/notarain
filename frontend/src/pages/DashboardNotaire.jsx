@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api.js";
 import toast from "react-hot-toast";
 import {
-  decryptWithMetaMask,
+  decryptWithStoredKey,
   encryptFileForAddress,
 } from "../services/encryption";
 import { uploadToPinata } from "../services/pinata";
+import { ethers } from "ethers";
 
 const STATUS_LABEL = {
   0: { label: "Brouillon", color: "var(--text-muted)" },
@@ -22,10 +24,21 @@ export default function DashboardNotaire() {
   const [loading, setLoading] = useState(true);
   const [rejectReason, setRejectReason] = useState({});
   const [processing, setProcessing] = useState({});
-  const [heirCounts, setHeirCounts] = useState({});
+  const [_heirCounts, setHeirCounts] = useState({});
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     loadData();
+    const autoFetchKey = async () => {
+      const stored = localStorage.getItem("notaryKeys");
+
+      // Only fetch if no keys exist
+      if (!stored) {
+        await handleDownloadAndImportKey();
+      }
+    };
+
+    autoFetchKey();
   }, []);
 
   async function loadData() {
@@ -65,9 +78,10 @@ export default function DashboardNotaire() {
       const res = await fetch(`https://gateway.pinata.cloud/ipfs/${ipfsCid}`);
       const encryptedJson = await res.json();
       toast("Déchiffrement en cours...", { icon: "🔐" });
-      const pdfBlob = await decryptWithMetaMask(
-        encryptedJson,
-        user.walletAddress
+      const pdfBlob = await decryptWithStoredKey(
+        encryptedJson.ciphertext,
+        encryptedJson.nonce,
+        encryptedJson.ephemPublicKey
       );
       const url = URL.createObjectURL(pdfBlob);
       window.open(url, "_blank");
@@ -121,9 +135,10 @@ export default function DashboardNotaire() {
       const encryptedJson = await res.json();
 
       toast("Déchiffrement Notaire...", { icon: "🔐" });
-      const pdfBlob = await decryptWithMetaMask(
-        encryptedJson,
-        user.walletAddress
+      const pdfBlob = await decryptWithStoredKey(
+        encryptedJson.ciphertext,
+        encryptedJson.nonce,
+        encryptedJson.ephemPublicKey
       );
       const pdfFile = new File([pdfBlob], "testament.pdf");
 
@@ -155,6 +170,83 @@ export default function DashboardNotaire() {
     }
   }
 
+  const handleDownloadAndImportKey = async () => {
+    setImporting(true);
+
+    try {
+      // 1. Get current wallet address
+      if (!window.ethereum) {
+        toast.error("Veuillez installer MetaMask!");
+        setImporting(false);
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      console.log("User address:", userAddress);
+
+      // 2. Fetch the key file from server
+      toast("📥 Téléchargement de la clé...");
+
+      const response = await api.get(
+        `/api/notary/download-notary-key/${userAddress}`
+      );
+
+      console.log("Response status:", response.status);
+      console.log("Response data:", response.data);
+
+      // Important: With axios, the response data is in response.data
+      const keyData = response.data;
+
+      console.log("Parsed key data:", keyData);
+      console.log("Key data has publicKey?", !!keyData.publicKey);
+      console.log("Key data has secretKey?", !!keyData.secretKey);
+
+      // 4. Verify wallet address matches
+      if (userAddress.toLowerCase() !== keyData.notaryAddress.toLowerCase()) {
+        console.error("Address mismatch:", userAddress, keyData.notaryAddress);
+        toast.error("Erreur: La clé ne correspond pas à ce portefeuille");
+        setImporting(false);
+        return;
+      }
+
+      // 5. Store in localStorage
+      const keysToStore = {
+        publicKey: keyData.publicKey,
+        secretKey: keyData.secretKey,
+        notaryAddress: keyData.notaryAddress,
+        importedAt: new Date().toISOString(),
+      };
+
+      console.log("Storing in localStorage:", keysToStore);
+
+      localStorage.setItem("notaryKeys", JSON.stringify(keysToStore));
+
+      // Verify it was stored
+      const stored = localStorage.getItem("notaryKeys");
+      console.log("Verified stored data:", stored);
+
+      if (stored) {
+        toast("✅ Clé importée avec succès!", "success");
+
+        // Refresh page or update state
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        toast.error("Erreur: Impossible de sauvegarder la clé", "error");
+      }
+    } catch (error) {
+      console.error("Import error details:", error);
+      console.error("Error response:", error.response);
+      toast.error(`Erreur: ${error.message}`, "error");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (loading)
     return (
       <div
@@ -167,8 +259,31 @@ export default function DashboardNotaire() {
 
   return (
     <div className="page-container">
-      <h1 className="page-title">Espace Notaire</h1>
-      <p className="page-subtitle">Gérez les testaments assignés</p>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <div>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>
+            Espace Notaire
+          </h1>
+          <p className="page-subtitle" style={{ marginTop: 8 }}>
+            Gérez les testaments assignés
+          </p>
+        </div>
+        <button
+          className="btn-primary"
+          onClick={handleDownloadAndImportKey}
+          disabled={importing}
+        >
+          {importing ? <span className="spinner" /> : "🔑"}
+          Récupérer la clé de Déchiffrement
+        </button>
+      </div>
 
       {testaments.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: 48 }}>

@@ -3,7 +3,9 @@
     "better-sqlite3": "^12.9.0",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.5",
-    "sqlite3": "^6.0.1"
+    "sqlite3": "^6.0.1",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.2"

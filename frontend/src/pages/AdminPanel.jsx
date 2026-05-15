@@ -11,7 +11,6 @@ export default function AdminPanel() {
     address: "",
     name: "",
     email: "",
-    publicKey: "",
   });
 
   useEffect(() => {
@@ -32,16 +31,59 @@ export default function AdminPanel() {
     }
   }
 
+  async function generateAndStoreEncryptionKey(walletAddress, message) {
+    // Create a signer from the wallet address (using the deployer's signer)
+    const [deployer] = await hre.ethers.getSigners();
+
+    // Sign the message on behalf of the wallet address (this creates a deterministic key)
+    const signature = await deployer.signMessage(`${message}-${walletAddress}`);
+    const hexStr = signature.startsWith("0x") ? signature.slice(2) : signature;
+    const signatureBytes = new Uint8Array(
+      hexStr.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+    );
+    const seed = signatureBytes.slice(-32);
+    const keyPair = nacl.box.keyPair.fromSecretKey(seed);
+
+    // Store the key data
+    const keyData = {
+      publicKey: util.encodeBase64(keyPair.publicKey),
+      secretKey: util.encodeBase64(keyPair.secretKey),
+      registeredAt: new Date().toISOString(),
+      notaryAddress: walletAddress,
+    };
+
+    // Save to your local machine
+    const exportDir = path.join(__dirname, "../../backend/keys/");
+    if (!fs.existsSync(exportDir)) {
+      fs.mkdirSync(exportDir, { recursive: true });
+    }
+
+    const filePath = path.join(
+      __dirname,
+      `../../backend/keys/${walletAddress}.key.json`
+    );
+    fs.writeFileSync(filePath, JSON.stringify(keyData, null, 2));
+
+    console.log(`\n🔑 KEY FILE GENERATED for ${walletAddress}: ${filePath}`);
+    console.log(`📧 YOU MUST SEND THIS FILE SECURELY TO THE NOTARY`);
+
+    return keyData.publicKey;
+  }
+
   async function addNotary() {
-    if (!form.address || !form.name || !form.email || !form.publicKey)
+    if (!form.address || !form.name || !form.email)
       return toast.error("Remplissez tous les champs");
     try {
       setAdding(true);
       const c = await getContract(true);
-      const tx = await c.addNotary(form.address, form.name, form.publicKey);
+      const publicKey = generateAndStoreEncryptionKey(
+        form.address,
+        "0x04notary_public_key"
+      );
+      const tx = await c.addNotary(form.address, form.name, publicKey);
       await tx.wait();
       toast.success("Notaire ajouté !");
-      setForm({ address: "", name: "", email: "", publicKey: "" });
+      setForm({ address: "", name: "", email: "" });
       loadNotaries();
     } catch (e) {
       toast.error("Erreur: " + (e.reason || e.message));
@@ -96,14 +138,6 @@ export default function AdminPanel() {
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           />
 
-          <input
-            className="input"
-            placeholder="Clé publique"
-            value={form.publicKey}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, publicKey: e.target.value }))
-            }
-          />
           <button className="btn-primary" onClick={addNotary} disabled={adding}>
             {adding ? (
               <>
@@ -142,9 +176,7 @@ export default function AdminPanel() {
             >
               <div>
                 <div style={{ fontWeight: 500, marginBottom: 4 }}>{n.name}</div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                  {n.address}
-                </div>
+                <div style={{ fontSize: 13, color: "white" }}>{n.address}</div>
                 <div style={{ marginTop: 6 }}>
                   <span
                     style={{
@@ -154,7 +186,9 @@ export default function AdminPanel() {
                       background: n.isActive
                         ? "var(--success-dim)"
                         : "var(--danger-dim)",
-                      border: `1px solid ${n.isActive ? "var(--success)" : "var(--danger)"}`,
+                      border: `1px solid ${
+                        n.isActive ? "var(--success)" : "var(--danger)"
+                      }`,
                       color: n.isActive ? "var(--success)" : "var(--danger)",
                     }}
                   >
@@ -162,15 +196,13 @@ export default function AdminPanel() {
                   </span>
                 </div>
               </div>
-              {n.isActive && (
-                <button
-                  className="btn-danger"
-                  style={{ padding: "8px 16px" }}
-                  onClick={() => removeNotary(n.address)}
-                >
-                  Supprimer
-                </button>
-              )}
+              <button
+                className="btn-danger"
+                style={{ padding: "8px 16px" }}
+                onClick={() => removeNotary(n.address)}
+              >
+                Supprimer
+              </button>
             </div>
           ))}
         </div>
@@ -178,4 +210,3 @@ export default function AdminPanel() {
     </div>
   );
 }
-

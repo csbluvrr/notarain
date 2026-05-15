@@ -38,6 +38,7 @@ backend/uploads/
 
 # Hardhat artifacts
 blockchain/artifacts/
+blockchain/keys/
 blockchain/cache/
 blockchain/coverage/
 blockchain/coverage.json
@@ -47,6 +48,7 @@ blockchain/package-lock.json
 # Generated contract deployment outputs (written by deploy script)
 frontend/src/contracts/TestamentRegistry.json
 backend/src/contracts/TestamentRegistry.json
+backend/keys/
 
 # cache
 cache/
