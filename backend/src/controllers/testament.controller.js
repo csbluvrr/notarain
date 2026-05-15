@@ -5,7 +5,9 @@ const { encryptBuffer } = require("../services/encryption.service");
 const { uploadEncryptedFile } = require("../services/ipfs.service");
 
 function normalizeWalletAddress(walletAddress) {
-  return String(walletAddress || "").toLowerCase().trim();
+  return String(walletAddress || "")
+    .toLowerCase()
+    .trim();
 }
 
 function parseBlockchainId(value) {
@@ -30,10 +32,16 @@ async function uploadTestament(req, res) {
     }
 
     const buffer = file.buffer;
-    const documentHash = crypto.createHash("sha256").update(buffer).digest("hex");
+    const documentHash = crypto
+      .createHash("sha256")
+      .update(buffer)
+      .digest("hex");
 
     const encryptedBuffer = encryptBuffer(buffer, encryptionPassword);
-    const ipfsCid = await uploadEncryptedFile(encryptedBuffer, file.originalname || "testament.pdf");
+    const ipfsCid = await uploadEncryptedFile(
+      encryptedBuffer,
+      file.originalname || "testament.pdf",
+    );
 
     const now = new Date();
     const testament = await Testament.create({
@@ -44,13 +52,13 @@ async function uploadTestament(req, res) {
       notaryWallet: undefined,
       originalFileName: file.originalname,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     });
 
     return res.status(201).json({
       testamentId: testament._id,
       ipfsCid,
-      documentHash
+      documentHash,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || "Server error" });
@@ -72,7 +80,9 @@ async function submitTestament(req, res) {
     }
 
     if (testament.status !== "draft") {
-      return res.status(400).json({ error: "Testament is not in draft status" });
+      return res
+        .status(400)
+        .json({ error: "Testament is not in draft status" });
     }
 
     testament.status = "pending";
@@ -117,7 +127,9 @@ async function setBlockchainId(req, res) {
 async function getMyTestaments(req, res) {
   try {
     const wallet = normalizeWalletAddress(req.user.walletAddress);
-    const testaments = await Testament.find({ testatorWallet: wallet }).sort({ createdAt: -1 });
+    const testaments = await Testament.find({ testatorWallet: wallet }).sort({
+      createdAt: -1,
+    });
     return res.status(200).json({ testaments });
   } catch (err) {
     return res.status(500).json({ error: err.message || "Server error" });
@@ -159,7 +171,7 @@ async function updateHeirs(req, res) {
     const sanitizedHeirs = heirs.map((h) => ({
       walletAddress: normalizeWalletAddress(h?.walletAddress),
       name: String(h?.name || "").trim(),
-      share: String(h?.share || "").trim()
+      share: String(h?.share || "").trim(),
     }));
 
     testament.heirs = sanitizedHeirs;
@@ -178,6 +190,5 @@ module.exports = {
   setBlockchainId,
   getMyTestaments,
   getTestamentById,
-  updateHeirs
+  updateHeirs,
 };
-

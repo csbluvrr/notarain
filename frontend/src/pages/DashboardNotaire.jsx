@@ -1,227 +1,380 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api.js";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import {
+  decryptWithStoredKey,
+  encryptFileForAddress,
+} from "../services/encryption";
+import { uploadToPinata } from "../services/pinata";
+import { ethers } from "ethers";
 
-import api from "../services/api";
-import StatusBadge from "../components/StatusBadge";
-import { getContract } from "../hooks/useContract";
-
-const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs";
-
-function tronquer(text, left = 6, right = 4) {
-  const s = String(text || "");
-  if (!s) return "";
-  if (s.length <= left + right + 3) return s;
-  return `${s.slice(0, left)}...${s.slice(-right)}`;
-}
-
-function formatDate(value) {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString();
-}
+const STATUS_LABEL = {
+  0: { label: "Brouillon", color: "var(--text-muted)" },
+  1: { label: "En attente", color: "var(--warning)" },
+  2: { label: "Approuvé", color: "var(--success)" },
+  3: { label: "Rejeté", color: "var(--danger)" },
+  4: { label: "Décès signalé", color: "var(--info)" },
+  5: { label: "Exécuté", color: "var(--accent)" },
+};
 
 export default function DashboardNotaire() {
-  const [onglet, setOnglet] = useState("attente");
-  const [enAttente, setEnAttente] = useState([]);
-  const [tous, setTous] = useState([]);
+  const { user, getContract } = useAuth();
+  const [testaments, setTestaments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [rejectReason, setRejectReason] = useState({});
+  const [processing, setProcessing] = useState({});
+  const [_heirCounts, setHeirCounts] = useState({});
+  const [importing, setImporting] = useState(false);
 
-  const charger = async () => {
+  useEffect(() => {
+    loadData();
+    const autoFetchKey = async () => {
+      const stored = localStorage.getItem("notaryKeys");
+
+      // Only fetch if no keys exist
+      if (!stored) {
+        await handleDownloadAndImportKey();
+      }
+    };
+
+    autoFetchKey();
+  }, []);
+
+  async function loadData() {
     try {
       setLoading(true);
-      const [pendingRes, allRes] = await Promise.all([
-        api.get("/api/notary/pending"),
-        api.get("/api/notary/all")
-      ]);
-      setEnAttente(pendingRes?.data?.testaments || []);
-      setTous(allRes?.data?.testaments || []);
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Chargement impossible");
+      const c = await getContract();
+      const ids = await c.getNotaryTestaments(user.walletAddress);
+      const tests = await Promise.all(ids.map((id) => c.getTestament(id)));
+      const counts = {};
+      for (let i = 0; i < ids.length; i++) {
+        const heirs = await c.getTestamentHeirs(ids[i]);
+        counts[ids[i].toString()] = heirs.length;
+      }
+      setHeirCounts(counts);
+      setTestaments(
+        tests.map((t, i) => ({
+          id: ids[i],
+          testator: t[1],
+          assignedNotary: t[2],
+          ipfsCid: t[3],
+          documentHash: t[4],
+          status: Number(t[5]),
+          deathCertificateCid: t[8],
+          rejectionReason: t[9],
+        }))
+      );
+    } catch (e) {
+      toast.error("Erreur: " + e.message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  useEffect(() => {
-    charger();
-  }, []);
-
-  const confirmer = (message) => {
-    return window.confirm(message);
-  };
-
-  const approuver = async (t) => {
-    if (!confirmer("Confirmer l’approbation de ce testament ?")) return;
+  async function decryptAndView(ipfsCid) {
     try {
-      await api.post(`/api/notary/approve/${t._id}`);
-
-      const blockchainId = Number(t.blockchainId || 0);
-      if (blockchainId > 0) {
-        const contract = await getContract();
-        const tx = await contract.approveTestament(blockchainId);
-        await tx.wait();
-      }
-
-      toast.success("Testament approuvé");
-      await charger();
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Approbation impossible");
+      toast("Récupération depuis IPFS...", { icon: "⏳" });
+      const res = await fetch(`https://gateway.pinata.cloud/ipfs/${ipfsCid}`);
+      const encryptedJson = await res.json();
+      toast("Déchiffrement en cours...", { icon: "🔐" });
+      const pdfBlob = await decryptWithStoredKey(
+        encryptedJson.ciphertext,
+        encryptedJson.nonce,
+        encryptedJson.ephemPublicKey
+      );
+      const url = URL.createObjectURL(pdfBlob);
+      window.open(url, "_blank");
+      toast.success("Testament déchiffré !");
+    } catch (e) {
+      toast.error("Erreur déchiffrement: " + e.message);
     }
-  };
+  }
 
-  const rejeter = async (t) => {
-    if (!confirmer("Confirmer le rejet de ce testament ?")) return;
+  async function approve(id) {
     try {
-      await api.post(`/api/notary/reject/${t._id}`);
+      setProcessing((p) => ({ ...p, [id]: true }));
+      const c = await getContract(true);
+      const tx = await c.approveTestament(id);
+      await tx.wait();
+      toast.success("Testament approuvé !");
+      loadData();
+    } catch (e) {
+      toast.error("Erreur: " + (e.reason || e.message));
+    } finally {
+      setProcessing((p) => ({ ...p, [id]: false }));
+    }
+  }
 
-      const blockchainId = Number(t.blockchainId || 0);
-      if (blockchainId > 0) {
-        const contract = await getContract();
-        const tx = await contract.rejectTestament(blockchainId);
-        await tx.wait();
-      }
-
+  async function reject(id) {
+    const reason = rejectReason[id];
+    if (!reason?.trim()) return toast.error("Entrez une raison de rejet");
+    try {
+      setProcessing((p) => ({ ...p, [id]: true }));
+      const c = await getContract(true);
+      const tx = await c.rejectTestament(id, reason);
+      await tx.wait();
       toast.success("Testament rejeté");
-      await charger();
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Rejet impossible");
+      loadData();
+    } catch (e) {
+      toast.error("Erreur: " + (e.reason || e.message));
+    } finally {
+      setProcessing((p) => ({ ...p, [id]: false }));
     }
-  };
+  }
 
-  const confirmerDeces = async (t) => {
-    if (!confirmer("Confirmer le décès et exécuter le testament ?")) return;
+  async function confirmDeath(id) {
     try {
-      await api.post(`/api/notary/execute/${t._id}`);
+      setProcessing((p) => ({ ...p, [id]: true }));
+      toast("Récupération testament...", { icon: "⏳" });
 
-      const blockchainId = Number(t.blockchainId || 0);
-      if (blockchainId > 0) {
-        const contract = await getContract();
-        const tx = await contract.confirmDeath(blockchainId);
-        await tx.wait();
+      const testament = testaments.find((t) => t.id === id);
+      const res = await fetch(
+        `https://gateway.pinata.cloud/ipfs/${testament.ipfsCid}`
+      );
+      const encryptedJson = await res.json();
+
+      toast("Déchiffrement Notaire...", { icon: "🔐" });
+      const pdfBlob = await decryptWithStoredKey(
+        encryptedJson.ciphertext,
+        encryptedJson.nonce,
+        encryptedJson.ephemPublicKey
+      );
+      const pdfFile = new File([pdfBlob], "testament.pdf");
+
+      toast("Rechiffrement pour les héritiers...", { icon: "🔑" });
+      const c = await getContract();
+      const heirs = await c.getTestamentHeirs(id);
+
+      const encryptedCids = await Promise.all(
+        heirs.map(async (heir) => {
+          const heirPubKey = await c.getHeirPublicKey(heir.walletAddress);
+          if (!heirPubKey) return "no_key_found";
+          const encryptedForHeir = await encryptFileForAddress(
+            pdfFile,
+            heirPubKey
+          );
+          return await uploadToPinata(encryptedForHeir);
+        })
+      );
+
+      const contract = await getContract(true);
+      const tx = await contract.confirmDeath(id, encryptedCids);
+      await tx.wait();
+      toast.success("Décès confirmé — accès transmis !");
+      loadData();
+    } catch (e) {
+      toast.error("Erreur: " + (e.reason || e.message));
+    } finally {
+      setProcessing((p) => ({ ...p, [id]: false }));
+    }
+  }
+
+  const handleDownloadAndImportKey = async () => {
+    setImporting(true);
+
+    try {
+      // 1. Get current wallet address
+      if (!window.ethereum) {
+        toast.error("Veuillez installer MetaMask!");
+        setImporting(false);
+        return;
       }
 
-      toast.success("Décès confirmé (exécuté)");
-      await charger();
-    } catch (err) {
-      toast.error(err?.response?.data?.error || err?.message || "Action impossible");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      console.log("User address:", userAddress);
+
+      // 2. Fetch the key file from server
+      toast("📥 Téléchargement de la clé...");
+
+      const response = await api.get(
+        `/api/notary/download-notary-key/${userAddress}`
+      );
+
+      console.log("Response status:", response.status);
+      console.log("Response data:", response.data);
+
+      // Important: With axios, the response data is in response.data
+      const keyData = response.data;
+
+      console.log("Parsed key data:", keyData);
+      console.log("Key data has publicKey?", !!keyData.publicKey);
+      console.log("Key data has secretKey?", !!keyData.secretKey);
+
+      // 4. Verify wallet address matches
+      if (userAddress.toLowerCase() !== keyData.notaryAddress.toLowerCase()) {
+        console.error("Address mismatch:", userAddress, keyData.notaryAddress);
+        toast.error("Erreur: La clé ne correspond pas à ce portefeuille");
+        setImporting(false);
+        return;
+      }
+
+      // 5. Store in localStorage
+      const keysToStore = {
+        publicKey: keyData.publicKey,
+        secretKey: keyData.secretKey,
+        notaryAddress: keyData.notaryAddress,
+        importedAt: new Date().toISOString(),
+      };
+
+      console.log("Storing in localStorage:", keysToStore);
+
+      localStorage.setItem("notaryKeys", JSON.stringify(keysToStore));
+
+      // Verify it was stored
+      const stored = localStorage.getItem("notaryKeys");
+      console.log("Verified stored data:", stored);
+
+      if (stored) {
+        toast("✅ Clé importée avec succès!", "success");
+
+        // Refresh page or update state
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        toast.error("Erreur: Impossible de sauvegarder la clé", "error");
+      }
+    } catch (error) {
+      console.error("Import error details:", error);
+      console.error("Error response:", error.response);
+      toast.error(`Erreur: ${error.message}`, "error");
+    } finally {
+      setImporting(false);
     }
   };
 
-  const carte = (t, actions) => {
-    const ipfsLink = t.ipfsCid ? `${PINATA_GATEWAY}/${t.ipfsCid}` : null;
+  if (loading)
     return (
-      <div key={t._id} className="nr-card nr-card-hover p-5 nr-fade-in-up">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="font-semibold truncate">{t.originalFileName}</div>
-            <div className="mt-1 text-xs text-gray-300">
-              Testateur : <span className="font-mono">{tronquer(t.testatorWallet)}</span>
-            </div>
-            <div className="text-xs text-gray-300">{formatDate(t.createdAt)}</div>
-          </div>
-          <StatusBadge status={t.status} />
-        </div>
-
-        {t.ipfsCid ? (
-          <div className="mt-3 text-sm text-gray-200">
-            CID IPFS :{" "}
-            <a className="text-indigo-300 underline break-all" href={ipfsLink} target="_blank" rel="noreferrer">
-              {tronquer(t.ipfsCid, 12, 4)}
-            </a>
-          </div>
-        ) : null}
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/testament/${t._id}`)}
-            className="nr-btn-secondary"
-          >
-            👁 Détails
-          </button>
-          {actions}
-        </div>
+      <div
+        className="page-container"
+        style={{ textAlign: "center", paddingTop: 120 }}
+      >
+        <span className="spinner" />
       </div>
     );
-  };
-
-  const liste = onglet === "attente" ? enAttente : tous;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="nr-card nr-card-hover nr-fade-in-up p-5 mb-6">
-        <h2 className="text-2xl font-bold">Espace Notaire</h2>
-        <p className="text-gray-300 mt-1">Valider ou rejeter les testaments, puis confirmer le décès si nécessaire.</p>
-      </div>
-
-      <div className="flex gap-3 mb-6 nr-fade-in-up">
-        <button
-          type="button"
-          onClick={() => setOnglet("attente")}
-          className={`px-4 py-2 rounded-lg font-semibold transition ${
-            onglet === "attente" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-950/50" : "bg-gray-800 text-gray-200 hover:bg-gray-700"
-          }`}
-        >
-          Testaments en attente
-        </button>
-        <button
-          type="button"
-          onClick={() => setOnglet("tous")}
-          className={`px-4 py-2 rounded-lg font-semibold transition ${
-            onglet === "tous" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-950/50" : "bg-gray-800 text-gray-200 hover:bg-gray-700"
-          }`}
-        >
-          Tous
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-600 border-t-white" />
+    <div className="page-container">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <div>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>
+            Espace Notaire
+          </h1>
+          <p className="page-subtitle" style={{ marginTop: 8 }}>
+            Gérez les testaments assignés
+          </p>
         </div>
-      ) : liste.length === 0 ? (
-        <div className="nr-card p-6 text-gray-300">
-          Aucun élément à afficher.
+        <button
+          className="btn-primary"
+          onClick={handleDownloadAndImportKey}
+          disabled={importing}
+        >
+          {importing ? <span className="spinner" /> : "🔑"}
+          Récupérer la clé de Déchiffrement
+        </button>
+      </div>
+
+      {testaments.length === 0 ? (
+        <div className="card" style={{ textAlign: "center", padding: 48 }}>
+          <p style={{ color: "var(--text-muted)" }}>Aucun testament assigné.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {liste.map((t) =>
-            carte(
-              t,
-              onglet === "attente" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => approuver(t)}
-                    className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 transition font-semibold"
-                  >
-                    ✅ Approuver
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => rejeter(t)}
-                    className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 transition font-semibold"
-                  >
-                    ❌ Rejeter
-                  </button>
-                </>
-              ) : t.status === "approved" ? (
-                <button
-                  type="button"
-                  onClick={() => confirmerDeces(t)}
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition font-semibold"
+        <div style={{ display: "grid", gap: 20 }}>
+          {testaments.map((t, i) => {
+            const s = STATUS_LABEL[t.status] || STATUS_LABEL[1];
+            const id = t.id;
+            return (
+              <div key={i} className="card">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 16,
+                  }}
                 >
-                  ⚰️ Confirmer décès
-                </button>
-              ) : null
-            )
-          )}
+                  <div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                      Testament #{id.toString()}
+                    </div>
+                    <div style={{ fontSize: 13 }}>
+                      Testateur: {String(t.testator).slice(0, 6)}...
+                      {String(t.testator).slice(-4)}
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      background: s.color + "22",
+                      border: `1px solid ${s.color}`,
+                      color: s.color,
+                    }}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+
+                {t.ipfsCid && !t.ipfsCid.startsWith("ipfs_") && (
+                  <button
+                    className="btn-secondary"
+                    style={{ marginBottom: 12 }}
+                    onClick={() => decryptAndView(t.ipfsCid)}
+                  >
+                    🔓 Déchiffrer et lire
+                  </button>
+                )}
+
+                {t.status === 1 && (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <button className="btn-approve" onClick={() => approve(id)}>
+                      ✅ Approuver
+                    </button>
+                    <input
+                      className="input"
+                      placeholder="Raison rejet..."
+                      onChange={(e) =>
+                        setRejectReason((r) => ({ ...r, [id]: e.target.value }))
+                      }
+                    />
+                    <button className="btn-danger" onClick={() => reject(id)}>
+                      ❌ Rejeter
+                    </button>
+                  </div>
+                )}
+
+                {t.status === 4 && (
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      className="btn-gold-action"
+                      disabled={processing[id]}
+                      onClick={() => confirmDeath(id)}
+                    >
+                      {processing[id] ? (
+                        <span className="spinner" />
+                      ) : (
+                        "✅ Confirmer le décès et exécuter"
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-

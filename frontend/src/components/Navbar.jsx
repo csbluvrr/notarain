@@ -17,7 +17,8 @@ function truncateMiddle(text, left = 6, right = 4) {
 
 function roleLabel(role) {
   const normalized = String(role || "").toLowerCase();
-  if (normalized === "testator" || normalized === "admin") return "Testateur";
+  if (normalized === "testator") return "Testateur";
+  if (normalized === "admin") return "Admin";
   if (normalized === "notary") return "Notaire";
   if (normalized === "heir") return "Héritier";
   return "Inconnu";
@@ -36,7 +37,7 @@ export default function Navbar() {
     testaments,
     pendingTestaments,
     allNotaryTestaments,
-    heirTestaments
+    heirTestaments,
   } = useDemoMode();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [notifOpen, setNotifOpen] = React.useState(false);
@@ -54,6 +55,9 @@ export default function Navbar() {
   const onLogout = async () => {
     try {
       await logout();
+      if (localStorage.getItem("notaryKeys") !== null) {
+        localStorage.removeItem("notaryKeys");
+      }
       toast.success("Déconnecté");
       navigate("/");
     } catch {
@@ -76,26 +80,35 @@ export default function Navbar() {
       return {
         total: list.length,
         approved: list.filter((t) => t.status === "approved").length,
-        executed: list.filter((t) => t.status === "executed").length
+        executed: list.filter((t) => t.status === "executed").length,
       };
     }
     if (role === "notary") {
-      const list = Array.isArray(allNotaryTestaments) ? allNotaryTestaments : [];
+      const list = Array.isArray(allNotaryTestaments)
+        ? allNotaryTestaments
+        : [];
       return {
         reviewed: list.length,
         approved: list.filter((t) => t.status === "approved").length,
-        rejected: list.filter((t) => t.status === "rejected").length
+        rejected: list.filter((t) => t.status === "rejected").length,
       };
     }
     if (role === "heir") {
       const list = Array.isArray(heirTestaments) ? heirTestaments : [];
       return {
         accessible: list.length,
-        executed: list.filter((t) => t.status === "executed").length
+        executed: list.filter((t) => t.status === "executed").length,
       };
     }
     return null;
-  }, [isDemoMode, demoRole, demoUser?.role, testaments, allNotaryTestaments, heirTestaments]);
+  }, [
+    isDemoMode,
+    demoRole,
+    demoUser?.role,
+    testaments,
+    allNotaryTestaments,
+    heirTestaments,
+  ]);
 
   return (
     <header
@@ -107,14 +120,37 @@ export default function Navbar() {
         height: 64,
         background: "var(--deep)",
         borderBottom: "1px solid var(--border)",
-        zIndex: 100
+        zIndex: 100,
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto", height: "100%", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div
+        style={{
+          maxWidth: 1100,
+          margin: "0 auto",
+          height: "100%",
+          padding: "0 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 32, height: 32 }}>
-            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="20" cy="20" r="17" stroke="var(--accent)" strokeWidth="2" />
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 40 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="20"
+                cy="20"
+                r="17"
+                stroke="var(--accent)"
+                strokeWidth="2"
+              />
               <text
                 x="50%"
                 y="53%"
@@ -133,7 +169,7 @@ export default function Navbar() {
               fontFamily: "'Cormorant Garamond', serif",
               fontSize: 22,
               letterSpacing: 1,
-              color: "var(--accent)"
+              color: "var(--accent)",
             }}
           >
             Notarain
@@ -162,7 +198,7 @@ export default function Navbar() {
                 fontSize: 11,
                 fontWeight: 500,
                 letterSpacing: 1,
-                textTransform: "uppercase"
+                textTransform: "uppercase",
               }}
             >
               DEMO MODE
@@ -170,10 +206,20 @@ export default function Navbar() {
           </div>
         ) : null}
 
-        <div className="navbar-right-desktop" style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
+        <div
+          className="navbar-right-desktop"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            position: "relative",
+          }}
+        >
           {isDemoMode ? (
             <>
-              <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>{demoUser?.name}</span>
+              <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+                {demoUser?.name}
+              </span>
               <span
                 style={{
                   padding: "5px 10px",
@@ -181,7 +227,7 @@ export default function Navbar() {
                   background: "var(--accent-dim)",
                   border: "1px solid var(--accent)",
                   color: "var(--accent)",
-                  fontSize: 12
+                  fontSize: 12,
                 }}
               >
                 {roleLabel(demoUser?.role)}
@@ -210,7 +256,7 @@ export default function Navbar() {
                           width: 8,
                           height: 8,
                           borderRadius: 999,
-                          background: "var(--danger)"
+                          background: "var(--danger)",
                         }}
                       />
                     ) : null}
@@ -273,12 +319,14 @@ export default function Navbar() {
                   background: "var(--accent-dim)",
                   border: "1px solid var(--accent)",
                   color: "var(--accent)",
-                  fontSize: 12
+                  fontSize: 12,
                 }}
               >
                 {roleLabel(user.role)}
               </span>
-              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{truncateMiddle(user.walletAddress)}</span>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                {truncateMiddle(user.walletAddress)}
+              </span>
               <div style={{ position: "relative" }} ref={profileAnchorRef}>
                 <button
                   type="button"
@@ -296,7 +344,11 @@ export default function Navbar() {
                   stats={null}
                 />
               </div>
-              <button type="button" className="btn-secondary" onClick={onLogout}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onLogout}
+              >
                 Déconnexion
               </button>
             </>
@@ -315,7 +367,7 @@ export default function Navbar() {
             borderBottom: "1px solid var(--border)",
             padding: "12px 24px",
             display: "grid",
-            gap: 10
+            gap: 10,
           }}
         >
           {isDemoMode ? (
@@ -336,8 +388,14 @@ export default function Navbar() {
             </>
           ) : user ? (
             <>
-              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{truncateMiddle(user.walletAddress)}</div>
-              <button type="button" className="btn-secondary" onClick={onLogout}>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                {truncateMiddle(user.walletAddress)}
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onLogout}
+              >
                 Déconnexion
               </button>
             </>
@@ -349,4 +407,3 @@ export default function Navbar() {
     </header>
   );
 }
-

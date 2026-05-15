@@ -13,11 +13,21 @@ pnpm-debug.log*
 
 # Environment files (keep *.env.example committed)
 .env
+*.env
 .env.*
+!.env.sample
 !.env.example
+
+backend/.env
+frontend/.env
 
 # Node dependencies
 node_modules/
+**/node_modules/
+
+# Package-lock
+package-lock.json
+**/package-lock.json
 
 # Vite / React build output
 frontend/dist/
@@ -28,12 +38,17 @@ backend/uploads/
 
 # Hardhat artifacts
 blockchain/artifacts/
+blockchain/keys/
 blockchain/cache/
 blockchain/coverage/
 blockchain/coverage.json
 blockchain/typechain-types/
+blockchain/package-lock.json
 
 # Generated contract deployment outputs (written by deploy script)
 frontend/src/contracts/TestamentRegistry.json
-backend/contracts/TestamentRegistry.json
+backend/src/contracts/TestamentRegistry.json
+backend/keys/
 
+# cache
+cache/

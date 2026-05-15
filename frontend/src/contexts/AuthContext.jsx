@@ -1,118 +1,96 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
-import api from "../services/api";
+import contractData from "../contracts/TestamentRegistry.json";
 
 const AuthContext = createContext(null);
+const CHAIN_ID = 31337;
+const CONTRACT_ADDRESS = contractData.address;
+const CONTRACT_ABI = contractData.abi;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
-      const storedToken = localStorage.getItem("notarain_token");
-      const storedUser = localStorage.getItem("notarain_user");
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      }
-    } catch {
-      // If localStorage parsing fails, just ignore stored values.
-    } finally {
-      setLoading(false);
-    }
+      const stored = localStorage.getItem("notarain_user");
+      if (stored) setUser(JSON.parse(stored));
+    } catch {}
+    finally { setLoading(false); }
   }, []);
+
+  const getContract = async (withSigner = false) => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    if (withSigner) {
+      const signer = await provider.getSigner();
+      return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    }
+    return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+  };
 
   const connectWallet = async () => {
     setLoading(true);
     try {
-      if (!window.ethereum) {
-        throw new Error("MetaMask introuvable. Veuillez l’installer.");
-      }
+      if (!window.ethereum) throw new Error("MetaMask introuvable");
 
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts"
+      // Force MetaMask à afficher le sélecteur de compte
+      await window.ethereum.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }]
       });
-      if (!accounts || !accounts.length) {
-        throw new Error("Aucun compte trouvé dans le portefeuille");
-      }
 
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      if (!accounts?.length) throw new Error("Aucun compte trouvé");
       const walletAddress = accounts[0].toLowerCase();
 
       const chainIdHex = await window.ethereum.request({ method: "eth_chainId" });
-      const chainId = Number(chainIdHex);
-
-      const requiredChainId = 11155111;
-      if (chainId !== requiredChainId) {
-        const chainIdParam = "0x" + requiredChainId.toString(16);
-        try {
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: chainIdParam }]
-          });
-        } catch (err) {
-          throw new Error("Veuillez basculer votre portefeuille sur Sepolia");
-        }
+      if (Number(chainIdHex) !== CHAIN_ID) {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x" + CHAIN_ID.toString(16) }]
+        });
       }
 
-      const nonceRes = await api.post("/api/auth/nonce", { walletAddress });
-      const message = nonceRes?.data?.message;
-      if (!message) {
-        throw new Error("Impossible de récupérer le nonce de connexion");
-      }
-
+      // Lire le rôle depuis le smart contract avec le bon signer
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const signature = await signer.signMessage(message);
+      const c = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const roleEnum = await c.getMyRole();
+      const roleMap = { 0: "none", 1: "testator", 2: "notary", 3: "heir", 4: "admin" };
+      const role = roleMap[Number(roleEnum)] || "none";
 
-      const verifyRes = await api.post("/api/auth/verify", { walletAddress, signature });
-      const newToken = verifyRes?.data?.token;
-      const newUser = verifyRes?.data?.user;
-      if (!newToken || !newUser) {
-        throw new Error("Échec de connexion");
-      }
-
-      localStorage.setItem("notarain_token", newToken);
+      const newUser = { walletAddress, role };
       localStorage.setItem("notarain_user", JSON.stringify(newUser));
-
-      setToken(newToken);
       setUser(newUser);
 
-      const role = String(newUser.role || "").toLowerCase();
-      if (role === "testator" || role === "admin") {
-        window.location.href = "/dashboard";
-      } else if (role === "notary") {
-        window.location.href = "/notary";
-      } else if (role === "heir") {
-        window.location.href = "/heir";
-      } else {
-        window.location.href = "/";
-      }
+      if (role === "admin") window.location.href = "/admin";
+      else if (role === "testator") window.location.href = "/dashboard";
+      else if (role === "notary") window.location.href = "/notary";
+      else if (role === "heir") window.location.href = "/heir";
+      else window.location.href = "/";
+
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = async () => {
-    localStorage.removeItem("notarain_token");
+  const logout = () => {
     localStorage.removeItem("notarain_user");
     setUser(null);
-    setToken(null);
+    window.location.href = "/";
   };
 
-  const value = useMemo(() => {
-    return {
-      user,
-      token,
-      loading,
-      connectWallet,
-      logout,
-      isNotary: user?.role === "notary",
-      isTestator: user?.role === "testator" || user?.role === "admin",
-      isHeir: user?.role === "heir"
-    };
-  }, [user, token, loading]);
+  const value = useMemo(() => ({
+    user,
+    loading,
+    connectWallet,
+    logout,
+    getContract,
+    isNotary: user?.role === "notary",
+    isTestator: user?.role === "testator" || user?.role === "admin",
+    isHeir: user?.role === "heir",
+    isAdmin: user?.role === "admin",
+  }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -122,4 +100,3 @@ export function useAuth() {
 }
 
 export default AuthContext;
-

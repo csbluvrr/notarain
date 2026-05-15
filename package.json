@@ -1,16 +1,13 @@
 {
-  "name": "notarain",
-  "version": "1.0.0",
-  "scripts": {
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "test:blockchain": "cd blockchain && npx hardhat test",
-    "deploy:local": "cd blockchain && npx hardhat run scripts/deploy.js --network localhost",
-    "deploy:sepolia": "cd blockchain && npx hardhat run scripts/deploy.js --network sepolia"
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.5",
+    "sqlite3": "^6.0.1",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
-    "concurrently": "^8.0.0"
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2"
   }
 }
-
