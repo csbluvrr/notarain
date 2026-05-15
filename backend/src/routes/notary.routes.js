@@ -6,6 +6,8 @@ const notaryQueries = require("../database/notaryQueries");
 const blockchainService = require("../services/blockchain.service");
 const NotaryMonitor = require("../jobs/notaryMonitor");
 const emailService = require("../services/email.service");
+const path = require("path");
+const fs = require("fs");
 
 const router = express.Router();
 
@@ -17,28 +19,28 @@ router.get(
   "/pending",
   authRequired,
   requireRole("notary"),
-  notaryController.pending,
+  notaryController.pending
 );
 
 router.post(
   "/approve/:id",
   authRequired,
   requireRole("notary"),
-  notaryController.approve,
+  notaryController.approve
 );
 
 router.post(
   "/reject/:id",
   authRequired,
   requireRole("notary"),
-  notaryController.reject,
+  notaryController.reject
 );
 
 router.post(
   "/execute/:id",
   authRequired,
   requireRole("notary"),
-  notaryController.execute,
+  notaryController.execute
 );
 
 router.get("/all", authRequired, requireRole("notary"), notaryController.all);
@@ -71,7 +73,7 @@ router.post("/register-monitor", async (req, res) => {
     await notaryQueries.logActivity(
       walletAddress,
       "REGISTERED",
-      `Name: ${name}, Email: ${email}`,
+      `Name: ${name}, Email: ${email}`
     );
 
     res.json({
@@ -104,7 +106,7 @@ router.get("/monitor-status/:walletAddress", async (req, res) => {
     const currentTimestamp = await blockchainService.getCurrentBlockTimestamp();
     const daysInactive = blockchainService.calculateDaysInactive(
       onChain.lastActive,
-      currentTimestamp,
+      currentTimestamp
     );
 
     // Determine status
@@ -130,7 +132,7 @@ router.get("/monitor-status/:walletAddress", async (req, res) => {
         isAlive: onChain.isAlive,
         lastActive: onChain.lastActive,
         lastActiveDate: new Date(
-          parseInt(onChain.lastActive) * 1000,
+          parseInt(onChain.lastActive) * 1000
         ).toISOString(),
       },
       monitoring: {
@@ -203,14 +205,14 @@ router.get("/monitored-notaries", async (req, res) => {
     const enhancedNotaries = await Promise.all(
       notaries.map(async (notary) => {
         const onChain = await blockchainService.getNotaryInfo(
-          notary.wallet_address,
+          notary.wallet_address
         );
         const currentTimestamp =
           await blockchainService.getCurrentBlockTimestamp();
         const daysInactive = onChain
           ? blockchainService.calculateDaysInactive(
               onChain.lastActive,
-              currentTimestamp,
+              currentTimestamp
             )
           : null;
 
@@ -222,7 +224,7 @@ router.get("/monitored-notaries", async (req, res) => {
             ? new Date(parseInt(onChain.lastActive) * 1000).toISOString()
             : null,
         };
-      }),
+      })
     );
 
     res.json({
@@ -274,7 +276,7 @@ router.post("/test-email", async (req, res) => {
           email,
           "Test Notary",
           10, // 10 days inactive
-          10, // 10 days remaining
+          10 // 10 days remaining
         );
         break;
       case "deactivation":
@@ -283,14 +285,14 @@ router.post("/test-email", async (req, res) => {
           "Test Notary",
           25,
           "Successor Notary",
-          "successor@example.com",
+          "successor@example.com"
         );
         break;
       case "transfer":
         result = await emailService.sendKeyTransferEmail(
           email,
           "Successor Notary",
-          "Original Notary",
+          "Original Notary"
         );
         break;
       default:
@@ -308,6 +310,65 @@ router.post("/test-email", async (req, res) => {
   } catch (error) {
     console.error("Test email error:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/download-notary-key/:address", async (req, res) => {
+  try {
+    const { address } = req.params;
+    console.log("Requested address:", address);
+
+    const keyFilePath = path.join(__dirname, `../../keys/${address}.key.json`);
+    console.log("Looking for file at:", keyFilePath);
+
+    // Check if file exists
+    if (!fs.existsSync(keyFilePath)) {
+      console.log("File does not exist");
+      return res
+        .status(404)
+        .json({ error: "Key file not found for this address" });
+    }
+
+    // Read the key file
+    const keyDataRaw = fs.readFileSync(keyFilePath, "utf8");
+    console.log("File read successfully, length:", keyDataRaw.length);
+
+    // Try to parse as JSON to validate
+    let keyData;
+    try {
+      keyData = JSON.parse(keyDataRaw);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      return res.status(500).json({ error: "Invalid key file format" });
+    }
+
+    // Ensure the address matches
+    if (
+      keyData.notaryAddress &&
+      keyData.notaryAddress.toLowerCase() !== address.toLowerCase()
+    ) {
+      console.log("Address mismatch:", keyData.notaryAddress, "vs", address);
+      return res
+        .status(403)
+        .json({ error: "Key file does not match requested address" });
+    }
+
+    // Set headers for file download
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=notary_key_${address}.json`
+    );
+
+    // Send the parsed JSON (not raw string)
+    return res.json(keyData);
+  } catch (error) {
+    console.error("Error serving key file:", error);
+    console.error("Error stack:", error.stack);
+    return res.status(500).json({
+      error: "Failed to retrieve key file",
+      details: error.message,
+    });
   }
 });
 
